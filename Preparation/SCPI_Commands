@@ -1,0 +1,10 @@
+import pyvisa
+
+rm = pyvisa.ResourceManager("@sim")
+
+resources = rm.list_resources()
+print(resources)
+
+inst = rm.open_resource("USB0::0x1111::0x2222::0x2468::0::INSTR")
+
+print(inst.query("*IDN?"))

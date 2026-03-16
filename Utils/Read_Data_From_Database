@@ -1,0 +1,7 @@
+import sqlite3
+
+db = sqlite3.connect("sweep_results.db")
+rows = db.execute("SELECT * FROM sweep").fetchall()
+for row in rows:
+    print(row)
+db.close()

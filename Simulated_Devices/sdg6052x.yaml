@@ -1,0 +1,160 @@
+spec: "1.0"
+devices:
+  sdg6052x:
+    eom:
+      USB INSTR:
+        q: "\n"
+        r: "\n"
+      TCPIP INSTR:
+        q: "\n"
+        r: "\n"
+      GPIB INSTR:
+        q: "\n"
+        r: "\n"
+    error: ERROR
+    dialogues:
+      - q: "*IDN?"
+        r: "Siglent Technologies,SDG6052X,SDG6XABC123456,5.1.5.20"
+      - q: "*RST"
+      - q: "*OPC?"
+        r: "1"
+      # Channel 1 basic wave query
+      - q: "C1:BSWV?"
+        r: "C1:BSWV WVTP,SINE,FRQ,1000HZ,PERI,0.001S,AMP,2V,AMPVRMS,0.707Vrms,OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0"
+      # Channel 2 basic wave query
+      - q: "C2:BSWV?"
+        r: "C2:BSWV WVTP,SINE,FRQ,1000HZ,PERI,0.001S,AMP,2V,AMPVRMS,0.707Vrms,OFST,0V,HLEV,1V,LLEV,-1V,PHSE,0"
+      # Channel 1 output query
+      - q: "C1:OUTP?"
+        r: "C1:OUTP OFF,LOAD,HZ,PLRT,NOR"
+      # Channel 2 output query
+      - q: "C2:OUTP?"
+        r: "C2:OUTP OFF,LOAD,HZ,PLRT,NOR"
+      # Set basic wave parameters (write-only, no response)
+      - q: "C1:BSWV WVTP,SINE"
+      - q: "C1:BSWV WVTP,SQUARE"
+      - q: "C1:BSWV WVTP,RAMP"
+      - q: "C1:BSWV WVTP,PULSE"
+      - q: "C1:BSWV WVTP,NOISE"
+      - q: "C1:BSWV WVTP,DC"
+      - q: "C2:BSWV WVTP,SINE"
+      - q: "C2:BSWV WVTP,SQUARE"
+      - q: "C2:BSWV WVTP,RAMP"
+      - q: "C2:BSWV WVTP,PULSE"
+      - q: "C2:BSWV WVTP,NOISE"
+      - q: "C2:BSWV WVTP,DC"
+      # Output on/off
+      - q: "C1:OUTP ON"
+      - q: "C1:OUTP OFF"
+      - q: "C2:OUTP ON"
+      - q: "C2:OUTP OFF"
+      # Buzzer
+      - q: "BUZZ ON"
+      - q: "BUZZ OFF"
+      - q: "BUZZ?"
+        r: "BUZZ ON"
+    properties:
+      # Channel 1 frequency
+      c1_frequency:
+        default: 1000.0
+        getter:
+          q: "C1:BSWV? FRQ"
+          r: "C1:BSWV FRQ,{:.1f}HZ"
+        setter:
+          q: "C1:BSWV FRQ,{:.1f}"
+        specs:
+          min: 0.000001
+          max: 500000000
+          type: float
+      # Channel 1 amplitude
+      c1_amplitude:
+        default: 2.0
+        getter:
+          q: "C1:BSWV? AMP"
+          r: "C1:BSWV AMP,{:.3f}V"
+        setter:
+          q: "C1:BSWV AMP,{:.3f}"
+        specs:
+          min: 0.002
+          max: 20
+          type: float
+      # Channel 1 offset
+      c1_offset:
+        default: 0.0
+        getter:
+          q: "C1:BSWV? OFST"
+          r: "C1:BSWV OFST,{:.3f}V"
+        setter:
+          q: "C1:BSWV OFST,{:.3f}"
+        specs:
+          min: -10
+          max: 10
+          type: float
+      # Channel 1 phase
+      c1_phase:
+        default: 0.0
+        getter:
+          q: "C1:BSWV? PHSE"
+          r: "C1:BSWV PHSE,{:.1f}"
+        setter:
+          q: "C1:BSWV PHSE,{:.1f}"
+        specs:
+          min: 0
+          max: 360
+          type: float
+      # Channel 2 frequency
+      c2_frequency:
+        default: 1000.0
+        getter:
+          q: "C2:BSWV? FRQ"
+          r: "C2:BSWV FRQ,{:.1f}HZ"
+        setter:
+          q: "C2:BSWV FRQ,{:.1f}"
+        specs:
+          min: 0.000001
+          max: 500000000
+          type: float
+      # Channel 2 amplitude
+      c2_amplitude:
+        default: 2.0
+        getter:
+          q: "C2:BSWV? AMP"
+          r: "C2:BSWV AMP,{:.3f}V"
+        setter:
+          q: "C2:BSWV AMP,{:.3f}"
+        specs:
+          min: 0.002
+          max: 20
+          type: float
+      # Channel 2 offset
+      c2_offset:
+        default: 0.0
+        getter:
+          q: "C2:BSWV? OFST"
+          r: "C2:BSWV OFST,{:.3f}V"
+        setter:
+          q: "C2:BSWV OFST,{:.3f}"
+        specs:
+          min: -10
+          max: 10
+          type: float
+      # Channel 2 phase
+      c2_phase:
+        default: 0.0
+        getter:
+          q: "C2:BSWV? PHSE"
+          r: "C2:BSWV PHSE,{:.1f}"
+        setter:
+          q: "C2:BSWV PHSE,{:.1f}"
+        specs:
+          min: 0
+          max: 360
+          type: float
+
+resources:
+  USB::0xF4EC::0x1101::0x0001::INSTR:
+    device: sdg6052x
+  TCPIP::localhost:5025::INSTR:
+    device: sdg6052x
+  GPIB::6::INSTR:
+    device: sdg6052x
