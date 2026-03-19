@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QPalette, QColor
 
-from app.services.device_connection import ask_idn, scan_for_devices
+from app.services.device_functions import ask_idn, scan_for_devices
 
 class ConnectionPanel(QGroupBox):
     def __init__(self):

@@ -1,56 +1,81 @@
 import sys
-from random import randint
+import time
+import traceback
+
+from PySide6.QtCore import QTimer, QRunnable, Slot, QThread, Signal, QObject
 from PySide6.QtWidgets import (
     QApplication,
-    QDialog,
     QLabel,
     QMainWindow,
-    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
+    QProgressBar
 )
-from custom_dialog import CustomDialog
 
-class AnotherWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        layout = QVBoxLayout()
-        self.label = QLabel("This is another window % d" % randint(0,100))
-        layout.addWidget(self.label)
-        self.setLayout(layout)
+class Worker(QObject):
+    progress = Signal(int)
+    completed = Signal(int)
+
+    @Slot(int)
+    def do_work(self, n):
+        for i in range(1, n + 1):
+            time.sleep(1)
+            self.progress.emit(i)
+        self.completed.emit(i)
 
 class MainWindow(QMainWindow):
+    work_requested = Signal(int)
+
     def __init__(self):
         super().__init__()
 
-        self.window1 = AnotherWindow()
-        self.window2 = AnotherWindow()
+        self.setGeometry(100, 100, 300, 50)
+        self.setWindowTitle("Threading Example")
 
+        #setup widget
+        self.widget = QWidget()
         layout = QVBoxLayout()
-        button1 = QPushButton("Push for Window 1")
-        button1.clicked.connect(
-            lambda checked: self.toggle_window(self.window1),
-        )
-        layout.addWidget(button1)
+        self.widget.setLayout(layout)
+        self.setCentralWidget(self.widget)
 
-        button2 = QPushButton("Push for Window 2")
-        button2.clicked.connect(
-            lambda checked: self.toggle_window(self.window2),
-        )
-        layout.addWidget(button2)
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setValue(0)
 
-        w = QWidget()
-        w.setLayout(layout)
-        self.setCentralWidget(w)
+        self.btn_start = QPushButton("Start Long Task", clicked=self.start)
 
-    def toggle_window(self, window):
-        if window.isVisible():
-            window.hide()
-        else:
-            window.show()
+        layout.addWidget(self.progress_bar)
+        layout.addWidget(self.btn_start)
 
-app = QApplication(sys.argv)
+        self.worker = Worker()
+        self.worker_thread = QThread()
+
+        self.worker.progress.connect(self.update_progress)
+        self.worker.completed.connect(self.complete)
+
+        self.work_requested.connect(self.worker.do_work)
+
+        # move worker to the worker thread
+        self.worker.moveToThread(self.worker_thread)
+
+        # start thread
+        self.worker_thread.start()
+
+        self.show()
+
+    def start(self):
+        self.btn_start.setEnabled(False)
+        n = 5
+        self.progress_bar.setMaximum(n)
+        self.work_requested.emit(n)
+
+    def update_progress(self, value):
+        self.progress_bar.setValue(value)
+
+    def complete(self, value):
+        self.progress_bar.setValue(value)
+        self.btn_start.setEnabled(True)
+
+app = QApplication([])
 window = MainWindow()
-window.show()
 app.exec()
