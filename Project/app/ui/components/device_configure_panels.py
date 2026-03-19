@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (
-    QCheckBox, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QComboBox, QLineEdit
+    QCheckBox, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QComboBox, QLineEdit, QWidget
 )
 from PySide6.QtGui import QPalette, QColor
 
@@ -63,9 +63,9 @@ class OscilloscopeConfigurePanel(QGroupBox):
         layout.addLayout(settings_layout)
 
 
-        # measurement types
-        types_layout = QVBoxLayout()
-        types_layout.addWidget(QLabel("Measurement Types:"))
+        # measurement parameters
+        parameter_layout = QVBoxLayout()
+        parameter_layout.addWidget(QLabel("Measurement Parameters:"))
 
         frequency_row = QHBoxLayout()
         self.frequency_checkbox = QCheckBox()
@@ -103,15 +103,46 @@ class OscilloscopeConfigurePanel(QGroupBox):
         rms_row.addWidget(self.rms_label)
         rms_row.addWidget(QLabel("V"))
 
+        parameter_layout.addLayout(frequency_row)
+        parameter_layout.addLayout(amplitude_row)
+        parameter_layout.addLayout(pkpk_row)
+        parameter_layout.addLayout(rms_row)
+        layout.addLayout(parameter_layout)
+
+
+        # Measurement Type
+        type_row = QHBoxLayout()
+        type_row.addWidget(QLabel("Measurement Type:"))
+        self.type_combo = QComboBox()
+        self.type_combo.setEditable(False)
+        self.type_combo.addItems(["Single", "Period of time"])
+        type_row.addWidget(self.type_combo)
+        layout.addLayout(type_row)
+
+        # Period of time settings
+        self.pot_widget = QWidget()
+        pot_row = QHBoxLayout()
+        pot_row.addWidget(QLabel("Length (s): "))
+        self.pot_length_input = QLineEdit()
+        pot_row.addWidget(self.pot_length_input)
+        pot_row.addWidget(QLabel("Measurements/s: "))
+        self.pot_measurement_s_input = QLineEdit()
+        pot_row.addWidget(self.pot_measurement_s_input)
+        self.pot_widget.setLayout(pot_row)
+        pot_row.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.pot_widget)
+        self.pot_widget.setVisible(False)
+
+        # Start buttons
         self.start_measurement_btn = QPushButton("Start Measurement")
+        layout.addWidget(self.start_measurement_btn)
 
-        types_layout.addLayout(frequency_row)
-        types_layout.addLayout(amplitude_row)
-        types_layout.addLayout(pkpk_row)
-        types_layout.addLayout(rms_row)
-        types_layout.addWidget(self.start_measurement_btn)
-        layout.addLayout(types_layout)
+        #Signals
+        self.type_combo.currentIndexChanged.connect(self.update_pot_visibility)
 
+    def update_pot_visibility(self):
+        selected = self.type_combo.currentText()
+        self.pot_widget.setVisible(selected == "Period of time")
 
 class FunctionGeneratorConfigurePanel(QGroupBox):
     def __init__(self):

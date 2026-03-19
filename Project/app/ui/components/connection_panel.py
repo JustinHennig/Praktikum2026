@@ -1,8 +1,6 @@
 from PySide6.QtWidgets import (
     QGroupBox, QHBoxLayout, QLabel, QVBoxLayout, QComboBox, QPushButton
 )
-from PySide6.QtGui import QPalette, QColor
-
 from app.services.device_functions import ask_idn, scan_for_devices
 
 class ConnectionPanel(QGroupBox):
@@ -48,6 +46,7 @@ class ConnectionPanel(QGroupBox):
         self.scan_btn.clicked.connect(self.scan_for_devices)
         self.idn_btn.clicked.connect(self.ask_idn)
 
+    # function to scan for devices and update the resource combo box using the scan_for_devices function from device_functions.py
     def scan_for_devices(self):
         try:
             resources = scan_for_devices()
@@ -60,6 +59,7 @@ class ConnectionPanel(QGroupBox):
             self.status_label.setStyleSheet("color: red;")
             self.status_label.setText(f"Scan error: {e}")
 
+    # function to ask the IDN of the selected device using the ask_idn function from device_functions.py
     def ask_idn(self):
         try:
             idn = ask_idn(self.resource_combo.currentText())
