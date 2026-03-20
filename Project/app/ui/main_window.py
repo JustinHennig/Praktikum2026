@@ -1,6 +1,5 @@
-from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget, QApplication
-from PySide6.QtCore import Qt
-import time
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtCore import QTimer
 from app.services.device_functions import(
  auto_set, get_v_div, get_t_div, get_offset, get_trigger_level, set_amplitude, set_frequency, set_phase, 
  set_t_div, set_v_div, set_offset, set_offset_gen, set_trigger_level, set_waveform, set_output, get_output_status
@@ -51,6 +50,13 @@ class MainWindow(QMainWindow):
         self.generator_panel.output_btn.clicked.connect(self.set_output)
         self.generator_panel.channel_combo.currentIndexChanged.connect(self.update_output_btn_status)
 
+        # State for timed measurement loop
+        self._measurement_timer = QTimer()
+        self._measurement_timer.timeout.connect(self._on_measurement_tick)
+        self._timer_remaining = 0
+        self._timer_resource = ""
+        self._timer_channel = 0
+
         widget = QWidget()
         widget.setLayout(layoutWhole)
         self.setCentralWidget(widget)
@@ -96,7 +102,7 @@ class MainWindow(QMainWindow):
             print(f"Set settings error: {e}")
 
     # Collects a single measurement snapshot from the oscilloscope and returns it as a dict
-    def _collect_measurement(self, resource: str, channel: int) -> dict:
+    def _collect_measurement(self, resource: str, channel: int) -> dict[str, float]:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         data = {
             "Resource": resource,
@@ -147,12 +153,12 @@ class MainWindow(QMainWindow):
             try:
                 length = float(self.oscilloscope_panel.pot_length_input.text())
                 measurements_per_s = float(self.oscilloscope_panel.pot_measurement_s_input.text())
-                interval = 1.0 / measurements_per_s if measurements_per_s > 0 else 1.0
-                num_measurements = int(length * measurements_per_s)
-                for i in range(num_measurements):
-                    self.measurement_display.add_measurement(self._collect_measurement(resource, channel))
-                    QApplication.processEvents()
-                    time.sleep(interval)
+                interval_ms = int(1000 / measurements_per_s) if measurements_per_s > 0 else 1000
+                self._timer_remaining = int(length * measurements_per_s)
+                self._timer_resource = resource
+                self._timer_channel = channel
+                self.oscilloscope_panel.start_measurement_btn.setEnabled(False)
+                self._measurement_timer.start(interval_ms)
             except Exception as e:
                 print(f"Period of time measurement error: {e}")
         else:
@@ -160,6 +166,23 @@ class MainWindow(QMainWindow):
                 self.measurement_display.add_measurement(self._collect_measurement(resource, channel))
             except Exception as e:
                 print(f"Start measurement error: {e}")
+
+    # Function called on each tick of the measurement timer during a "Period of time" measurement, collects a measurement and updates the display, and stops the timer when the time is up
+    def _on_measurement_tick(self):
+        #Called by QTimer on each interval tick during a timed measurement.
+        if self._timer_remaining <= 0:
+            self._measurement_timer.stop()
+            self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
+            return
+        try:
+            self.measurement_display.add_measurement(
+                self._collect_measurement(self._timer_resource, self._timer_channel)
+            )
+        except Exception as e:
+            print(f"Measurement tick error: {e}")
+            self._measurement_timer.stop()
+            self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
+        self._timer_remaining -= 1
 
     # Function to set the configuration of the generator based on user input
     def set_configuration(self):
@@ -184,6 +207,7 @@ class MainWindow(QMainWindow):
 
         try:
             config_data = {
+                "Resource": resource,
                 "Channel": channel,
                 "Time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Waveform":  self.generator_panel.waveform_combo.currentText(),

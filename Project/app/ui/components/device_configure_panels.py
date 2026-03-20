@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import (
     QCheckBox, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QComboBox, QLineEdit, QWidget
 )
-from PySide6.QtGui import QPalette, QColor
 
 class OscilloscopeConfigurePanel(QGroupBox):
     def __init__(self):

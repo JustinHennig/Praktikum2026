@@ -36,3 +36,30 @@ def insert_measurement(measurement_id: int, time: str, values: dict) -> int:
         session.add(measurement)
         session.commit()
         return measurement.id
+    
+# Function to get all measurement settings for listing or loading purposes
+def get_all_measurement_settings():
+    with Session() as session:
+        rows = session.query(MeasurementSettings).all()
+        return [
+            {
+                "measurement_id": row.measurement_id,
+                "device": row.device,
+                "configuration": json.loads(row.configuration)  # convert JSON string back to dict
+            }
+            for row in rows
+        ]
+
+# Function to get all measurement entries for a specific measurement_id 
+def get_measurements_by_id(measurement_id: int) -> dict:
+    with Session() as session:
+        rows = session.query(Measurement).filter(
+            Measurement.measurement_id == measurement_id
+        ).all()
+        return [
+            {
+                "time":   r.time,
+                "values": json.loads(r.measurement_values),
+            }
+            for r in rows
+        ]
