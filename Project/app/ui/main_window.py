@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget, QApplication
 from PySide6.QtCore import Qt
-
+import time
 from app.services.device_functions import(
  auto_set, get_v_div, get_t_div, get_offset, get_trigger_level, set_amplitude, set_frequency, set_phase, 
  set_t_div, set_v_div, set_offset, set_offset_gen, set_trigger_level, set_waveform, set_output, get_output_status
@@ -41,14 +41,14 @@ class MainWindow(QMainWindow):
 
         # Signals
         self.connection_panel.device_combo.currentIndexChanged.connect(self.config_stack.setCurrentIndex)
+        self.connection_panel.resource_combo.currentIndexChanged.connect(self.update_output_btn_status)
         self.oscilloscope_panel.auto_set_btn.clicked.connect(self.auto_set)
         self.oscilloscope_panel.scan_cur_set_btn.clicked.connect(self.scan_current_settings)
         self.oscilloscope_panel.save_set_btn.clicked.connect(self.set_settings)
         self.oscilloscope_panel.start_measurement_btn.clicked.connect(self.start_measurement)
         self.generator_panel.set_configuration_btn.clicked.connect(self.set_configuration)
-        self.generator_panel.save_configuration_btn.clicked.connect(self.set_configuration)
+        self.generator_panel.save_configuration_btn.clicked.connect(self.save_configuration)
         self.generator_panel.output_btn.clicked.connect(self.set_output)
-        self.connection_panel.resource_combo.currentIndexChanged.connect(self.update_output_btn_status)
         self.generator_panel.channel_combo.currentIndexChanged.connect(self.update_output_btn_status)
 
         widget = QWidget()
@@ -95,6 +95,44 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"Set settings error: {e}")
 
+    # Collects a single measurement snapshot from the oscilloscope and returns it as a dict
+    def _collect_measurement(self, resource: str, channel: int) -> dict:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        data = {
+            "Resource": resource,
+            "Channel": channel,
+            "Time": timestamp,
+            "v_div_mv": get_v_div(resource, channel),
+            "t_div_ms": get_t_div(resource),
+            "offset_mv": get_offset(resource, channel),
+            "trigger_level": get_trigger_level(resource)
+        }
+        if self.oscilloscope_panel.frequency_checkbox.isChecked():
+            frequency = get_frequency(resource)
+            self.oscilloscope_panel.frequency_label.setText(frequency)
+            data["Frequency"] = frequency
+        else:
+            data["Frequency"] = None
+        if self.oscilloscope_panel.amplitude_checkbox.isChecked():
+            amplitude = get_amplitude(resource, channel)
+            self.oscilloscope_panel.amplitude_label.setText(amplitude)
+            data["Amplitude"] = amplitude
+        else:
+            data["Amplitude"] = None
+        if self.oscilloscope_panel.pkpk_checkbox.isChecked():
+            pkpk = get_pkpk(resource, channel)
+            self.oscilloscope_panel.pkpk_label.setText(pkpk)
+            data["Peak-to-Peak"] = pkpk
+        else:
+            data["Peak-to-Peak"] = None
+        if self.oscilloscope_panel.rms_checkbox.isChecked():
+            rms = get_rms(resource, channel)
+            self.oscilloscope_panel.rms_label.setText(rms)
+            data["RMS"] = rms
+        else:
+            data["RMS"] = None
+        return data
+
     # Function to start the measurement
     def start_measurement(self):
         resource = self.connection_panel.resource_combo.currentText()
@@ -112,89 +150,14 @@ class MainWindow(QMainWindow):
                 interval = 1.0 / measurements_per_s if measurements_per_s > 0 else 1.0
                 num_measurements = int(length * measurements_per_s)
                 for i in range(num_measurements):
-                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                    measurement_data = {
-                        "Resource": resource,
-                        "Channel": channel,
-                        "Time": timestamp,
-                        "v_div_mv": get_v_div(resource, channel),
-                        "t_div_ms": get_t_div(resource),
-                        "offset_mv": get_offset(resource, channel),
-                        "trigger_level": get_trigger_level(resource)
-                    }
-                    # Messung nur wenn Checkbox aktiviert
-                    if self.oscilloscope_panel.frequency_checkbox.isChecked():
-                        frequency = get_frequency(resource)
-                        self.oscilloscope_panel.frequency_label.setText(frequency)
-                        measurement_data["Frequency"] = frequency
-                    else:
-                        measurement_data["Frequency"] = None
-                    if self.oscilloscope_panel.amplitude_checkbox.isChecked():
-                        amplitude = get_amplitude(resource, channel)
-                        self.oscilloscope_panel.amplitude_label.setText(amplitude)
-                        measurement_data["Amplitude"] = amplitude
-                    else:
-                        measurement_data["Amplitude"] = None
-                    if self.oscilloscope_panel.pkpk_checkbox.isChecked():
-                        pkpk = get_pkpk(resource, channel)
-                        self.oscilloscope_panel.pkpk_label.setText(pkpk)
-                        measurement_data["Peak-to-Peak"] = pkpk
-                    else:
-                        measurement_data["Peak-to-Peak"] = None
-                    if self.oscilloscope_panel.rms_checkbox.isChecked():
-                        rms = get_rms(resource, channel)
-                        self.oscilloscope_panel.rms_label.setText(rms)
-                        measurement_data["RMS"] = rms
-                    else:
-                        measurement_data["RMS"] = None
-
-                    self.measurement_display.add_measurement(measurement_data)
+                    self.measurement_display.add_measurement(self._collect_measurement(resource, channel))
                     QApplication.processEvents()
-                    import time
                     time.sleep(interval)
             except Exception as e:
                 print(f"Period of time measurement error: {e}")
         else:
             try:
-                timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-                measurement_data = {
-                    "Resource": resource,
-                    "Channel": channel,
-                    "Time": timestamp,
-                    "v_div_mv": get_v_div(resource, channel),
-                    "t_div_ms": get_t_div(resource),
-                    "offset_mv": get_offset(resource, channel),
-                    "trigger_level": get_trigger_level(resource)
-                }
-                # Messung nur wenn Checkbox aktiviert
-                if self.oscilloscope_panel.frequency_checkbox.isChecked():
-                    frequency = get_frequency(resource)
-                    self.oscilloscope_panel.frequency_label.setText(frequency)
-                    measurement_data["Frequency"] = frequency
-                else:
-                    measurement_data["Frequency"] = None
-                if self.oscilloscope_panel.amplitude_checkbox.isChecked():
-                    amplitude = get_amplitude(resource, channel)
-                    self.oscilloscope_panel.amplitude_label.setText(amplitude)
-                    measurement_data["Amplitude"] = amplitude
-                else:
-                    measurement_data["Amplitude"] = None
-                if self.oscilloscope_panel.pkpk_checkbox.isChecked():
-                    pkpk = get_pkpk(resource, channel)
-                    self.oscilloscope_panel.pkpk_label.setText(pkpk)
-                    measurement_data["Peak-to-Peak"] = pkpk
-                else:
-                    measurement_data["Peak-to-Peak"] = None
-                if self.oscilloscope_panel.rms_checkbox.isChecked():
-                    rms = get_rms(resource, channel)
-                    self.oscilloscope_panel.rms_label.setText(rms)
-                    measurement_data["RMS"] = rms
-                else:
-                    measurement_data["RMS"] = None
-
-                self.measurement_display.add_measurement(measurement_data)
+                self.measurement_display.add_measurement(self._collect_measurement(resource, channel))
             except Exception as e:
                 print(f"Start measurement error: {e}")
 
@@ -214,9 +177,24 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"Set configuration error: {e}")
 
+    # Function to save the current generator configuration to the table
     def save_configuration(self):
-        #Placeholder for saving the generator configuration function
-        pass
+        resource = self.connection_panel.resource_combo.currentText()
+        channel = int(self.generator_panel.channel_combo.currentText())
+
+        try:
+            config_data = {
+                "Channel": channel,
+                "Time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "Waveform":  self.generator_panel.waveform_combo.currentText(),
+                "Frequency": self.generator_panel.frequency_input.text(),
+                "Amplitude": self.generator_panel.amplitude_input.text(),
+                "Offset":    self.generator_panel.offset_input.text(),
+                "Phase":     self.generator_panel.phase_input.text(),
+            }
+            self.measurement_display.add_measurement(config_data)
+        except Exception as e:
+            print(f"Save configuration error: {e}")
 
     # Function to toggle the output of the generator on and off
     def set_output(self):

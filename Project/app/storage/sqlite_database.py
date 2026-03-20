@@ -1,78 +1,38 @@
-
 from pathlib import Path
-import sqlite3
-from typing import Any
-import os
+import json
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.models.measurement_record import MeasurementSettings
+from app.models.measurement_record import Measurement
 
-# Datenbank im Unterordner 'data' speichern
-DATA_DIR = Path(__file__).parent.parent.parent / "data"
-DATA_DIR.mkdir(exist_ok=True)
-DB_PATH = DATA_DIR / "measurements.db"
+# Resolve the path to the 'data' directory three levels above this file (Project/data/)
+DB_PATH = Path(__file__).parent.parent.parent / "data" / "database.db"
 
-def get_connection() -> sqlite3.Connection:
-    connection = sqlite3.connect(DB_PATH)
-    connection.row_factory = sqlite3.Row
-    return connection
+# Create the SQLAlchemy engine connecting to the SQLite database file
+engine = create_engine(f"sqlite:///{DB_PATH}")
 
-def init_db():
-    with get_connection() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS measurement_settings (
-                measurement_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                v_div_mv REAL,
-                t_div_ms REAL,
-                offset_mv REAL,
-                trigger_level REAL
-            )
-        """)
+Session = sessionmaker(bind=engine)
 
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS measurements (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                measurement_id INTEGER NOT NULL,
-                time TEXT NOT NULL,
-                freq REAL,
-                amplitude REAL,
-                peak_to_peak REAL,
-                rms REAL,
-                FOREIGN KEY (measurement_id) REFERENCES measurement_settings(measurement_id)
-            )
-        """)
+#Insert a new measurement configuration and return its generated ID.
+def insert_measurement_settings(device: str, parameters: dict) -> int:
+    with Session() as session:
+        settings = MeasurementSettings(
+            device=device,
+            configuration=json.dumps(parameters),   # store dict as JSON string
+        )
+        session.add(settings)
+        session.commit()
+        return settings.measurement_id
 
-def insert_measurement_settings(
-    v_div_mv: float | None,
-    t_div_ms: float | None,
-    offset_mv: float | None,
-    trigger_level: float | None,
-) -> int:
-    with get_connection() as conn:
-        cursor = conn.execute("""
-            INSERT INTO measurement_settings (
-                v_div_mv,
-                t_div_ms,
-                offset_mv,
-                trigger_level
-            ) VALUES (?, ?, ?, ?)
-        """, (v_div_mv, t_div_ms, offset_mv, trigger_level))
-        return int(cursor.lastrowid)
 
-def insert_measurement(
-    measurement_id: int,
-    time: str,
-    freq: float | None,
-    amplitude: float | None,
-    peak_to_peak: float | None,
-    rms: float | None,
-) -> int:
-    with get_connection() as conn:
-        cursor = conn.execute("""
-            INSERT INTO measurements (
-                measurement_id,
-                time,
-                freq,
-                amplitude,
-                peak_to_peak,
-                rms
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        """, (measurement_id, time, freq, amplitude, peak_to_peak, rms))
-        return int(cursor.lastrowid)
+#Insert a single measurement row linked to an existing measurement_settings record.
+def insert_measurement(measurement_id: int, time: str, values: dict) -> int:
+    with Session() as session:
+        measurement = Measurement(
+            measurement_id=measurement_id,
+            time=time,
+            measurement_values=json.dumps(values)  # store dict as JSON string
+        )
+        session.add(measurement)
+        session.commit()
+        return measurement.id

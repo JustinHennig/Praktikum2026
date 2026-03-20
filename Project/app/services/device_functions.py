@@ -21,22 +21,22 @@ def auto_set(resource: str):
 def get_v_div(resource: str, channel: int) -> str:
     inst = rm.open_resource(resource)
     v_div = float(inst.query(f':CHAN{channel}:SCAL?').strip()) * 1000
-    return f"{v_div:.2f}"
+    return f"{v_div:.4f}"
 
 def get_t_div(resource: str) -> str:
     inst = rm.open_resource(resource)
     t_div = float(inst.query(':TIM:SCAL?').strip()) * 1000
-    return f"{t_div:.2f}"
+    return f"{t_div:.4f}"
 
 def get_offset(resource: str, channel: int) -> str:
     inst = rm.open_resource(resource)
     offset = float(inst.query(f':CHAN{channel}:OFFS?').strip()) * 1000
-    return f"{offset:.2f}"
+    return f"{offset:.4f}"
 
 def get_trigger_level(resource: str) -> str:
     inst = rm.open_resource(resource)
     trigger_level = float(inst.query(':TRIG:EDGE:LEV?').strip()) * 1000
-    return f"{trigger_level:.2f}"
+    return f"{trigger_level:.4f}"
 
 # set values
 def set_v_div(resource: str, v_div: float, channel: int):
