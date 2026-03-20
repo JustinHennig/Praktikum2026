@@ -17,6 +17,16 @@ def get_connection() -> sqlite3.Connection:
 def init_db():
     with get_connection() as conn:
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS measurement_settings (
+                measurement_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                v_div_mv REAL,
+                t_div_ms REAL,
+                offset_mv REAL,
+                trigger_level REAL
+            )
+        """)
+
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS measurements (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 measurement_id INTEGER NOT NULL,
@@ -24,28 +34,12 @@ def init_db():
                 freq REAL,
                 amplitude REAL,
                 peak_to_peak REAL,
-                rms REAL
+                rms REAL,
+                FOREIGN KEY (measurement_id) REFERENCES measurement_settings(measurement_id)
             )
         """)
 
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS measurement_settings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                measurement_id INTEGER NOT NULL,
-                v_div_mv REAL,
-                t_div_ms REAL,
-                offset_mv REAL,
-                trigger_level REAL,
-                FOREIGN KEY (measurement_id) REFERENCES measurements(id)
-            )
-        """)
-
-def insert_measurement_into_db(
-    time: str,
-    freq: float | None,
-    amplitude: float | None,
-    peak_to_peak: float | None,
-    rms: float | None,
+def insert_measurement_settings(
     v_div_mv: float | None,
     t_div_ms: float | None,
     offset_mv: float | None,
@@ -53,27 +47,32 @@ def insert_measurement_into_db(
 ) -> int:
     with get_connection() as conn:
         cursor = conn.execute("""
-            INSERT INTO measurements (time, freq, amplitude, peak_to_peak, rms)
-            VALUES (?, ?, ?, ?, ?)
-        """, (time, freq, amplitude, peak_to_peak, rms))
-
-        measurement_id = cursor.lastrowid
-
-        conn.execute("""
             INSERT INTO measurement_settings (
-                measurement_id,
                 v_div_mv,
                 t_div_ms,
                 offset_mv,
                 trigger_level
-            )
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            measurement_id,
-            v_div_mv,
-            t_div_ms,
-            offset_mv,
-            trigger_level,
-        ))
+            ) VALUES (?, ?, ?, ?)
+        """, (v_div_mv, t_div_ms, offset_mv, trigger_level))
+        return int(cursor.lastrowid)
 
-    return int(measurement_id)
+def insert_measurement(
+    measurement_id: int,
+    time: str,
+    freq: float | None,
+    amplitude: float | None,
+    peak_to_peak: float | None,
+    rms: float | None,
+) -> int:
+    with get_connection() as conn:
+        cursor = conn.execute("""
+            INSERT INTO measurements (
+                measurement_id,
+                time,
+                freq,
+                amplitude,
+                peak_to_peak,
+                rms
+            ) VALUES (?, ?, ?, ?, ?, ?)
+        """, (measurement_id, time, freq, amplitude, peak_to_peak, rms))
+        return int(cursor.lastrowid)

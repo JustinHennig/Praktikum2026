@@ -203,9 +203,11 @@ class FunctionGeneratorConfigurePanel(QGroupBox):
         # Button row
         button_row = QHBoxLayout()
         self.set_configuration_btn = QPushButton("Set configuration")
+        self.save_configuration_btn = QPushButton("Save configuration")
         self.output_btn = QPushButton("Output: OFF")
 
         button_row.addWidget(self.set_configuration_btn)
+        button_row.addWidget(self.save_configuration_btn)
         button_row.addWidget(self.output_btn)
         layout.addLayout(button_row)
 
