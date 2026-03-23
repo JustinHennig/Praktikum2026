@@ -45,6 +45,10 @@ class MeasurementDisplay(QGroupBox):
 
         # Initialize measurement data list
         self.measurement_data = []
+        self.measurement_name = ""
+
+    def set_measurement_name(self, name: str):
+        self.measurement_name = name.strip()
 
     # Function to add measurement data to the display
     def add_measurement(self, data):
@@ -70,7 +74,7 @@ class MeasurementDisplay(QGroupBox):
             return
 
         # Keys that are never stored as measurement values
-        meta_keys = {"Resource", "Time"}
+        meta_keys = {"Resource", "Time", "Name"}
         # Keys that describe the instrument configuration → go into 'parameters'
         config_keys = {"Channel", "v_div_mv", "t_div_ms", "offset_mv", "trigger_level"}
 
@@ -88,6 +92,7 @@ class MeasurementDisplay(QGroupBox):
         try:
             measurement_id = insert_measurement_settings(
                 device=device,
+                name=self.measurement_name or "Unnamed Measurement",
                 parameters=parameters,
             )
             for data in self.measurement_data:

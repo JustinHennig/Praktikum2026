@@ -57,6 +57,7 @@ class MainWindow(QMainWindow):
         self.generator_panel.output_btn.clicked.connect(self.set_output)
         self.generator_panel.channel_combo.currentIndexChanged.connect(self.update_output_btn_status)
         self.measurement_display.configuration_loaded.connect(self.load_configuration)
+        self.oscilloscope_panel.measurement_name_input.textChanged.connect(self.measurement_display.set_measurement_name)
 
         # State for timed measurement loop
         self._measurement_timer = QTimer()
@@ -264,6 +265,8 @@ class MainWindow(QMainWindow):
         if any(k in config for k in ["v_div_mv", "t_div_ms", "offset_mv", "trigger_level"]):
             self.connection_panel.device_combo.setCurrentIndex(0)
             self.config_stack.setCurrentIndex(0)
+        
+        # If the configuration contains a channel setting, set the channel combo box in both panels to that channel
         if "Channel" in config:
             self.oscilloscope_panel.channel_combo.setCurrentText(str(config["Channel"]))
             self.generator_panel.channel_combo.setCurrentText(str(config["Channel"]))
@@ -275,3 +278,6 @@ class MainWindow(QMainWindow):
             self.oscilloscope_panel.offset_input.setText(str(config["offset_mv"]))
         if "trigger_level" in config:
             self.oscilloscope_panel.trigger_input.setText(str(config["trigger_level"]))
+
+        if "Name" in config:
+            self.oscilloscope_panel.measurement_name_input.setText(config["Name"])

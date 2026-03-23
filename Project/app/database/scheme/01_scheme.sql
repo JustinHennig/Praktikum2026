@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS measurement_settings (
     measurement_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    measurement_name TEXT NOT NULL,
+    name TEXT NOT NULL,
     device TEXT NOT NULL,
     configuration TEXT NOT NULL  -- JSON to save the configuration settings
 );

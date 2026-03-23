@@ -112,6 +112,12 @@ class OscilloscopeConfigurePanel(QGroupBox):
         parameter_layout.addLayout(rms_row)
         layout.addLayout(parameter_layout)
 
+        # Measurement name
+        name_row = QHBoxLayout()
+        name_row.addWidget(QLabel("Measurement Name:"))
+        self.measurement_name_input = QLineEdit()
+        name_row.addWidget(self.measurement_name_input)
+        layout.addLayout(name_row)
 
         # Measurement Type
         type_row = QHBoxLayout()

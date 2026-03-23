@@ -18,10 +18,10 @@ class LoadMeasurementDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Select a measurement configuration to load:"))
 
-        # Create a table to display the measurement settings with 3 columns
+        # Create a table to display the measurement settings with 4 columns
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["ID", "Device", "Configuration"])
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["ID", "Name", "Device", "Configuration"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
@@ -32,8 +32,9 @@ class LoadMeasurementDialog(QDialog):
             row = self.table.rowCount()
             self.table.insertRow(row)
             self.table.setItem(row, 0, QTableWidgetItem(str(row_data["measurement_id"])))
-            self.table.setItem(row, 1, QTableWidgetItem(row_data["device"]))
-            self.table.setItem(row, 2, QTableWidgetItem(str(row_data["configuration"])))
+            self.table.setItem(row, 1, QTableWidgetItem(row_data["name"]))
+            self.table.setItem(row, 2, QTableWidgetItem(row_data["device"]))
+            self.table.setItem(row, 3, QTableWidgetItem(str(row_data["configuration"])))
 
         layout.addWidget(self.table)
 

@@ -12,6 +12,7 @@ class MeasurementSettings(Base):
 
     measurement_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     device: Mapped[str] = mapped_column(String, nullable=False)
+    name: Mapped[str] = mapped_column(String, nullable=False)
     configuration: Mapped[str] = mapped_column(String, nullable=False)
 
     measurements = relationship("Measurement", back_populates="settings")

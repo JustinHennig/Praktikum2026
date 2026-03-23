@@ -16,10 +16,11 @@ engine = create_engine(f"sqlite:///{DB_PATH}")
 Session = sessionmaker(bind=engine)
 
 #Insert a new measurement configuration and return its generated ID.
-def insert_measurement_settings(device: str, parameters: dict) -> int:
+def insert_measurement_settings(device: str, name: str, parameters: dict) -> int:
     with Session() as session:
         settings = MeasurementSettings(
             device=device,
+            name=name,
             configuration=json.dumps(parameters),   # store dict as JSON string
         )
         session.add(settings)
@@ -47,6 +48,7 @@ def get_all_measurement_settings() -> list[dict]:
             {
                 "measurement_id": row.measurement_id,
                 "device": row.device,
+                "name": row.name,
                 "configuration": json.loads(row.configuration)  # convert JSON string back to dict
             }
             for row in rows
