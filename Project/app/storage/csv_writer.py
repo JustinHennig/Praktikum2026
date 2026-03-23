@@ -1,3 +1,6 @@
+# This CSV writer is currently outdated and needs to be updated to work with the new data structure
+# As of now, it is not being used in the application and if needed, it can be re-intergrated in the measurement display
+
 import csv
 import os
 from PySide6.QtWidgets import QFileDialog, QMessageBox

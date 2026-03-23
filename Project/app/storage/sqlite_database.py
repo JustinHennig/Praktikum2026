@@ -1,3 +1,5 @@
+# This file contains functions for interacting with the SQLite database using SQLAlchemy
+
 from pathlib import Path
 import json
 from sqlalchemy import create_engine
@@ -38,7 +40,7 @@ def insert_measurement(measurement_id: int, time: str, values: dict) -> int:
         return measurement.id
     
 # Function to get all measurement settings for listing or loading purposes
-def get_all_measurement_settings():
+def get_all_measurement_settings() -> list[dict]:
     with Session() as session:
         rows = session.query(MeasurementSettings).all()
         return [
@@ -51,7 +53,7 @@ def get_all_measurement_settings():
         ]
 
 # Function to get all measurement entries for a specific measurement_id 
-def get_measurements_by_id(measurement_id: int) -> dict:
+def get_measurements_by_id(measurement_id: int) -> list[dict]:
     with Session() as session:
         rows = session.query(Measurement).filter(
             Measurement.measurement_id == measurement_id
@@ -63,3 +65,14 @@ def get_measurements_by_id(measurement_id: int) -> dict:
             }
             for r in rows
         ]
+
+# Function to delete a measurement configuration and all its linked measurement entries by measurement_id  
+def delete_measurement_by_id(measurement_id: int):
+    with Session() as session:
+        session.query(Measurement).filter(
+            Measurement.measurement_id == measurement_id
+        ).delete()
+        session.query(MeasurementSettings).filter(
+            MeasurementSettings.measurement_id == measurement_id
+        ).delete()
+        session.commit()

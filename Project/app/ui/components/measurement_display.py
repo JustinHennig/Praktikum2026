@@ -1,9 +1,15 @@
-from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QHeaderView, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout
+# This file defines the MeasurementDisplay class, which is using a QGroupbox to display
+# the measurement data in a table and also provides buttons to save the data, load the data, clear the display and delete a selected row.
+
+from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QHeaderView, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QDialog
+from PySide6.QtCore import Signal
 from app.storage.sqlite_database import insert_measurement_settings, insert_measurement, get_measurements_by_id, get_all_measurement_settings
-from app.storage.csv_writer import save_as_csv
-from app.ui.components.load_measurement_dialog import LoadMeasurementDialog
+from app.ui.components.load_delete_measurement_window import LoadMeasurementDialog
 
 class MeasurementDisplay(QGroupBox):
+     # Signal to notify the main window that a new measurement has been added, so that the configuration can be updated
+    configuration_loaded = Signal(dict)
+
     def __init__(self):
         super().__init__("Measurement Display")
 
@@ -13,20 +19,18 @@ class MeasurementDisplay(QGroupBox):
         self.table = QTableWidget()
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Time", "Col. 1", "Col. 2", "Col. 3", "Col. 4"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setEditTriggers(QTableWidget.AllEditTriggers)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         layout.addWidget(self.table)
 
         # Buttons for saving
         button_row = QHBoxLayout()
 
-        self.save_csv_btn = QPushButton("Save as CSV")
         self.save_db_btn = QPushButton("Save to Database")
         self.load_db_btn = QPushButton("Load from Database")
         self.clear_btn = QPushButton("Clear Display")
         self.delete_row_btn = QPushButton("Delete Row")
 
-        button_row.addWidget(self.save_csv_btn)
         button_row.addWidget(self.save_db_btn)
         button_row.addWidget(self.load_db_btn)
         button_row.addWidget(self.clear_btn)
@@ -34,7 +38,6 @@ class MeasurementDisplay(QGroupBox):
         layout.addLayout(button_row)
 
         # Signals
-        self.save_csv_btn.clicked.connect(self.save_as_csv)
         self.save_db_btn.clicked.connect(self.insert_measurement_into_db)
         self.load_db_btn.clicked.connect(self.load_measurements_from_db)
         self.clear_btn.clicked.connect(self.clear_display)
@@ -42,10 +45,6 @@ class MeasurementDisplay(QGroupBox):
 
         # Initialize measurement data list
         self.measurement_data = []
-
-    # function to save the measurement data as a CSV file
-    def save_as_csv(self):
-        save_as_csv(self.measurement_data)
 
     # Function to add measurement data to the display
     def add_measurement(self, data):
@@ -106,6 +105,7 @@ class MeasurementDisplay(QGroupBox):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save to database:\n{e}")
 
+    # Function to load the measurement data from the database and display it in the table
     def load_measurements_from_db(self):
         settings = get_all_measurement_settings()
         if not settings:
@@ -113,13 +113,24 @@ class MeasurementDisplay(QGroupBox):
             return
 
         dialog = LoadMeasurementDialog(settings, parent=self)
-        if dialog.exec() != LoadMeasurementDialog.Accepted:
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
+        # Check if a measurement was selected
+        if dialog.selected_id is None:
+            QMessageBox.information(self, "Load", "No measurement selected.")
+            return
+        
+        # Load the measurement entries for the selected measurement_id
         measurements = get_measurements_by_id(dialog.selected_id)
         if not measurements:
             QMessageBox.information(self, "Load", "No data rows for this measurement.")
             return
+        
+        # Look for the corresponding settings to reconstruct the configuration in the panel
+        selected_settings = next((s for s in settings if s["measurement_id"] == dialog.selected_id), None)
+        if selected_settings is not None:
+            self.configuration_loaded.emit(selected_settings)  # Emit the configuration to update the device panel
 
         self.clear_display()
         for m in measurements:
@@ -127,6 +138,7 @@ class MeasurementDisplay(QGroupBox):
             data = {"Time": m["time"], **m["values"]}
             self.add_measurement(data)
 
+    # Function to clear the display
     def clear_display(self):
         self.table.setRowCount(0)
         self.table.setColumnCount(5)

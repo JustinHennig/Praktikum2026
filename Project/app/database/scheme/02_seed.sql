@@ -1,11 +1,15 @@
+-- Sample data for testing the database
+
 -- Sample measurement settings: oscilloscope sweep on channel 1
-INSERT INTO measurement_settings (device, configuration) VALUES (
+INSERT INTO measurement_settings (measurement_name, device, configuration) VALUES (
+    'Oscilloscope Sweep Channel 1',
     'USB0::0xF4EC::0x1011::SDS5ADED4R0001::INSTR',
     '{"channel": 1, "v_div_mv": 500, "t_div_ms": 1.0, "offset_mv": 0.0, "trigger_level": 0.5}'
 );
 
 -- Sample measurement settings: oscilloscope sweep on channel 2
-INSERT INTO measurement_settings (device, configuration) VALUES (
+INSERT INTO measurement_settings (measurement_name, device, configuration) VALUES (
+    'Oscilloscope Sweep Channel 2',
     'USB0::0xF4EC::0x1011::SDS5ADED4R0001::INSTR',
     '{"channel": 2, "v_div_mv": 200, "t_div_ms": 0.5, "offset_mv": 0.0, "trigger_level": 0.3}'
 );
@@ -23,7 +27,8 @@ INSERT INTO measurements (measurement_id, time, measurement_values) VALUES (2, '
 INSERT INTO measurements (measurement_id, time, measurement_values) VALUES (2, '2026-03-20 10:00:02', '{"Frequency": "500.08", "Amplitude": "1.81",  "Peak-to-Peak": "3.62",  "RMS": "1.28"}');
 
 -- Sample measurement settings: function generator channel 1
-INSERT INTO measurement_settings (device, configuration) VALUES (
+INSERT INTO measurement_settings (measurement_name, device, configuration) VALUES (
+    'Function Generator Channel 1',
     'USB0::0xF4EC::0x1102::SDG6EBAD4Q0001::INSTR',
     '{"channel": 1}'
 );

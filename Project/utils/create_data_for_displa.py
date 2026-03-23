@@ -1,11 +1,4 @@
-"""
-Utility to inject mock measurement data into the MeasurementDisplay table.
-Call inject_mock_data(window) after the MainWindow is created.
-
-Usage in main.py:
-    from utils.create_data_for_displa import inject_mock_data
-    inject_mock_data(window)
-"""
+# This file is to create mock data for the measurement display, which is useful for testing the display and database functions 
 
 import datetime
 import random

@@ -1,3 +1,10 @@
+# Thsi file contains the MainWindow class, which is the main window of the application and contains
+# all the different panels splitted into a left and right side
+# while the left side contains the connection panel and the configuration panels for the oscilloscope and function generator.
+# The right side contains the measurement display
+
+from logging import config
+
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget
 from PySide6.QtCore import QTimer
 from app.services.device_functions import(
@@ -49,10 +56,11 @@ class MainWindow(QMainWindow):
         self.generator_panel.save_configuration_btn.clicked.connect(self.save_configuration)
         self.generator_panel.output_btn.clicked.connect(self.set_output)
         self.generator_panel.channel_combo.currentIndexChanged.connect(self.update_output_btn_status)
+        self.measurement_display.configuration_loaded.connect(self.load_configuration)
 
         # State for timed measurement loop
         self._measurement_timer = QTimer()
-        self._measurement_timer.timeout.connect(self._on_measurement_tick)
+        self._measurement_timer.timeout.connect(self.on_measurement_tick)
         self._timer_remaining = 0
         self._timer_resource = ""
         self._timer_channel = 0
@@ -102,7 +110,7 @@ class MainWindow(QMainWindow):
             print(f"Set settings error: {e}")
 
     # Collects a single measurement snapshot from the oscilloscope and returns it as a dict
-    def _collect_measurement(self, resource: str, channel: int) -> dict[str, float]:
+    def collect_measurement(self, resource: str, channel: int) -> dict[str, float]:
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         data = {
             "Resource": resource,
@@ -163,12 +171,12 @@ class MainWindow(QMainWindow):
                 print(f"Period of time measurement error: {e}")
         else:
             try:
-                self.measurement_display.add_measurement(self._collect_measurement(resource, channel))
+                self.measurement_display.add_measurement(self.collect_measurement(resource, channel))
             except Exception as e:
                 print(f"Start measurement error: {e}")
 
     # Function called on each tick of the measurement timer during a "Period of time" measurement, collects a measurement and updates the display, and stops the timer when the time is up
-    def _on_measurement_tick(self):
+    def on_measurement_tick(self):
         #Called by QTimer on each interval tick during a timed measurement.
         if self._timer_remaining <= 0:
             self._measurement_timer.stop()
@@ -176,7 +184,7 @@ class MainWindow(QMainWindow):
             return
         try:
             self.measurement_display.add_measurement(
-                self._collect_measurement(self._timer_resource, self._timer_channel)
+                self.collect_measurement(self._timer_resource, self._timer_channel)
             )
         except Exception as e:
             print(f"Measurement tick error: {e}")
@@ -248,3 +256,22 @@ class MainWindow(QMainWindow):
         except Exception:
             btn.setText("Output: OFF")
 
+    # Function to load the configuration of the oscilloscope into the configuration panel
+    def load_configuration(self, settings: dict):
+        config = settings.get("configuration", {})
+
+       # Determining is the device is a oscilloscope based on the presence of typical oscilloscope settings
+        if any(k in config for k in ["v_div_mv", "t_div_ms", "offset_mv", "trigger_level"]):
+            self.connection_panel.device_combo.setCurrentIndex(0)
+            self.config_stack.setCurrentIndex(0)
+        if "Channel" in config:
+            self.oscilloscope_panel.channel_combo.setCurrentText(str(config["Channel"]))
+            self.generator_panel.channel_combo.setCurrentText(str(config["Channel"]))
+        if "v_div_mv" in config:
+            self.oscilloscope_panel.v_div_input.setText(str(config["v_div_mv"]))
+        if "t_div_ms" in config:
+            self.oscilloscope_panel.t_div_input.setText(str(config["t_div_ms"]))
+        if "offset_mv" in config:
+            self.oscilloscope_panel.offset_input.setText(str(config["offset_mv"]))
+        if "trigger_level" in config:
+            self.oscilloscope_panel.trigger_input.setText(str(config["trigger_level"]))

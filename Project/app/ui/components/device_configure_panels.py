@@ -1,7 +1,11 @@
+# This file contains the OscilloscopeConfigurePanel and FunctionGeneratorConfigurePanel classes,
+# Which are used in the main window to display the configuration options for the oscilloscope and function generator
+
 from PySide6.QtWidgets import (
     QCheckBox, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QComboBox, QLineEdit, QWidget
 )
 
+# Panel for configuring the oscilloscope settings and measurement parameters
 class OscilloscopeConfigurePanel(QGroupBox):
     def __init__(self):
         super().__init__("Oscilloscope Configure Panel")
@@ -17,7 +21,7 @@ class OscilloscopeConfigurePanel(QGroupBox):
         channel_row.addWidget(self.channel_combo)
         layout.addLayout(channel_row)
 
-        #oscilloscope configuration settings
+        # Oscilloscope configuration settings
         settings_layout = QVBoxLayout()
         settings_layout.addWidget(QLabel("Configuration Settings:"))
 
@@ -62,7 +66,7 @@ class OscilloscopeConfigurePanel(QGroupBox):
         layout.addLayout(settings_layout)
 
 
-        # measurement parameters
+        # Measurement parameters
         parameter_layout = QVBoxLayout()
         parameter_layout.addWidget(QLabel("Measurement Parameters:"))
 
@@ -143,6 +147,7 @@ class OscilloscopeConfigurePanel(QGroupBox):
         selected = self.type_combo.currentText()
         self.pot_widget.setVisible(selected == "Period of time")
 
+# Panel for configuring the function generator settings
 class FunctionGeneratorConfigurePanel(QGroupBox):
     def __init__(self):
         super().__init__("Function Generator Configure Panel")

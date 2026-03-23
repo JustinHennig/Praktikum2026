@@ -1,8 +1,5 @@
-"""
-Clears all data from the database tables without dropping them.
-The schema (table structure) is preserved — only the rows are deleted.
-Usage: python teardown.py
-"""
+# Clears all data from the database tables without dropping them.
+# The schema (table structure) is preserved, only the rows are deleted.
 
 import sqlite3
 from pathlib import Path

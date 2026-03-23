@@ -1,3 +1,5 @@
+# This file defines the ConnectionPanel class, which is using QGroupBox to display the connection options for the devices
+
 from PySide6.QtWidgets import (
     QGroupBox, QHBoxLayout, QLabel, QVBoxLayout, QComboBox, QPushButton
 )
