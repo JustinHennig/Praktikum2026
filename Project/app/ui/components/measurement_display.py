@@ -7,7 +7,7 @@ from app.storage.sqlite_database import insert_measurement_settings, insert_meas
 from app.ui.components.load_delete_measurement_window import LoadMeasurementDialog
 
 class MeasurementDisplay(QGroupBox):
-     # Signal to notify the main window that a new measurement has been added, so that the configuration can be updated
+    # Signal to notify the main window that a new measurement has been added, so that the configuration can be updated
     configuration_loaded = Signal(dict)
 
     def __init__(self):
@@ -152,6 +152,9 @@ class MeasurementDisplay(QGroupBox):
 
     # Function to delete the selected row
     def delete_selected_row(self):
+        if not self.table.selectionModel().hasSelection():
+            QMessageBox.information(self, "Delete Row", "No row selected.")
+            return
         selected_row = self.table.currentRow()
         self.table.removeRow(selected_row)
         # Only delete if index exists in measurement_data

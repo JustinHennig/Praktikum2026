@@ -3,7 +3,7 @@
 # while the left side contains the connection panel and the configuration panels for the oscilloscope and function generator.
 # The right side contains the measurement display
 
-from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QStackedWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QStackedWidget, QVBoxLayout, QWidget
 from PySide6.QtCore import QThread, QTimer
 from app.services.device_worker import DeviceWorker
 from app.scpi_commands.sds_commands import(
@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
             print(f"Set settings error: {e}")
 
     # Reads checkbox state in the main thread and submits a full measurement to the SDS worker
-    def _submit_measurement(self, resource: str, channel: int):
+    def submit_measurement(self, resource: str, channel: int):
         self._sds_worker.submit(
             "measurement",
             collect_measurement,
@@ -143,6 +143,11 @@ class MainWindow(QMainWindow):
 
         if not resource:
             return
+        
+        confirm = QMessageBox.question(self, "Start Measurement", "Display needs to be cleared for a new measurement.", QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        if confirm != QMessageBox.StandardButton.Ok:
+            return
+        self.measurement_display.clear_display()
 
         # Depending on the measurement type, either take a single measurement or continuously measure for a period of time
         if measurement_type == "Period of time":
@@ -158,7 +163,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"Period of time measurement error: {e}")
         else:
-            self._submit_measurement(resource, channel)
+            self.submit_measurement(resource, channel)
 
     # Function called on each tick of the measurement timer during a "Period of time" measurement, submits a measurement to the worker and stops the timer when the time is up
     def on_measurement_tick(self):
@@ -166,7 +171,7 @@ class MainWindow(QMainWindow):
             self._measurement_timer.stop()
             self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
             return
-        self._submit_measurement(self._timer_resource, self._timer_channel)
+        self.submit_measurement(self._timer_resource, self._timer_channel)
         self._timer_remaining -= 1
 
     # Function to set the configuration of the generator based on user input
@@ -245,8 +250,8 @@ class MainWindow(QMainWindow):
         if "trigger_level" in config:
             self.oscilloscope_panel.trigger_input.setText(str(config["trigger_level"]))
 
-        if "Name" in config:
-            self.oscilloscope_panel.measurement_name_input.setText(config["Name"])
+        if settings.get("name"):
+            self.oscilloscope_panel.measurement_name_input.setText(settings["name"])
 
     # Handles results from the SDS oscilloscope worker
     def _on_sds_result(self, task_id: str, result):

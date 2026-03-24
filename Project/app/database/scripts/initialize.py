@@ -5,7 +5,7 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 DB_PATH    = SCRIPT_DIR / "../../../data/database.db"
-SCHEME_DIR = SCRIPT_DIR / "../scheme"
+SCHEMA_DIR = SCRIPT_DIR / "../schema"
 
 def run_sql_file(conn: sqlite3.Connection, path: Path):
     sql = path.read_text(encoding="utf-8")
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     print(f"Initializing database: {DB_PATH.resolve()}")
 
     with sqlite3.connect(DB_PATH) as conn:
-        run_sql_file(conn, SCHEME_DIR / "01_scheme.sql")
-        run_sql_file(conn, SCHEME_DIR / "02_seed.sql")
+        run_sql_file(conn, SCHEMA_DIR / "01_schema.sql")
+        run_sql_file(conn, SCHEMA_DIR / "02_seed.sql")
 
     print("Done.")
