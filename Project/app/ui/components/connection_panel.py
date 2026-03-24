@@ -22,16 +22,27 @@ class ConnectionPanel(QGroupBox):
         device_type_row.addWidget(self.device_combo)
         layout.addLayout(device_type_row)
 
-        # Select the resource
-        resource_row = QHBoxLayout()
-        resource_row.addWidget(QLabel("Resource:"))
-        self.resource_combo = QComboBox()
-        self.resource_combo.setEditable(False)
-        self.resource_combo.view().setMinimumWidth(400)
-        resource_row.addWidget(self.resource_combo)
-        layout.addLayout(resource_row)
+        # Two comboboxes for two resources, one for the oscilloscope and one for the function generator for ease of use
+        resource_layout = QVBoxLayout()
+        osc_resource_row = QHBoxLayout()
+        osc_resource_row.addWidget(QLabel("Oscilloscope Resource:"))
+        self.osc_resource_combo = QComboBox()
+        self.osc_resource_combo.setEditable(False)
+        self.osc_resource_combo.view().setMinimumWidth(400)
+        osc_resource_row.addWidget(self.osc_resource_combo)
 
-        # Buton Row
+        gen_resource_row = QHBoxLayout()
+        gen_resource_row.addWidget(QLabel("Function Generator Resource:"))
+        self.gen_resource_combo = QComboBox()
+        self.gen_resource_combo.setEditable(False)
+        self.gen_resource_combo.view().setMinimumWidth(400)
+        gen_resource_row.addWidget(self.gen_resource_combo)
+
+        resource_layout.addLayout(osc_resource_row)
+        resource_layout.addLayout(gen_resource_row)
+        layout.addLayout(resource_layout)
+
+        # Button Row
         btn_row = QHBoxLayout()
         self.scan_btn = QPushButton("Scan for devices")
         self.idn_btn = QPushButton("Ask IDN")
@@ -42,8 +53,9 @@ class ConnectionPanel(QGroupBox):
         # Status
         self.status_label = QLabel("Status: Disconnected")
         self.status_label.setStyleSheet("color: white;")
-        self.status_label.setVisible(False)
+        self.status_label.setContentsMargins(0, 10, 0, 0)
         self.status_label.setWordWrap(True)
+        self.status_label.setVisible(False)
         layout.addWidget(self.status_label)
 
         # Worker thread for device-independent SCPI operations (scan, IDN)
@@ -69,7 +81,13 @@ class ConnectionPanel(QGroupBox):
 
     # Function to ask the IDN of the selected device using the ask_idn function from device_functions.py
     def ask_idn(self):
-        resource = self.resource_combo.currentText()
+        device_type = self.device_combo.currentText()
+        if device_type == "Oscilloscope":
+            resource = self.osc_resource_combo.currentText()
+        elif device_type == "Function Generator":
+            resource = self.gen_resource_combo.currentText()
+        else:
+            return
         if not resource:
             return
         self.idn_btn.setEnabled(False)
@@ -78,12 +96,15 @@ class ConnectionPanel(QGroupBox):
         self.status_label.setVisible(True)
         self._worker.submit("idn", ask_idn, resource)
 
+    # Callback functions for the worker thread to update the UI based on the results or errors from the scan and IDN operations
     def _on_result(self, task_id: str, result):
         match task_id:
             case "scan":
                 self.scan_btn.setEnabled(True)
-                self.resource_combo.clear()
-                self.resource_combo.addItems(result)
+                self.osc_resource_combo.clear()
+                self.osc_resource_combo.addItems(result)
+                self.gen_resource_combo.clear()
+                self.gen_resource_combo.addItems(result)
                 self.status_label.setStyleSheet("color: white;")
                 self.status_label.setText(f"Status: {len(result)} device(s) found")
             case "idn":
@@ -101,3 +122,9 @@ class ConnectionPanel(QGroupBox):
                 self.idn_btn.setEnabled(True)
                 self.status_label.setStyleSheet("color: red;")
                 self.status_label.setText(f"IDN error: {error}")
+
+    # Clean up the worker thread when the panel is closed
+    def cleanup(self):
+        self._worker.stop()
+        self._thread.quit()
+        self._thread.wait()

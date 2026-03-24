@@ -55,7 +55,7 @@ class MeasurementDisplay(QGroupBox):
         self.measurement_data.append(data)
 
         # Keys to display — skip metadata that is not useful in the table
-        skip_keys = {"Resource", "Channel"}
+        skip_keys = {"Resource", "Channel", "v_div_mv", "t_div_ms", "offset_mv", "trigger_level"}
         columns = [k for k in data if k not in skip_keys]
 
         # On the first row, update the table headers to match the actual data keys

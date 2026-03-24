@@ -49,20 +49,20 @@ class OscilloscopeConfigurePanel(QGroupBox):
         trigger_row.addWidget(self.trigger_input)
         trigger_row.addWidget(QLabel("mV"))
 
-        buttons_row = QHBoxLayout()
+        btn_row = QHBoxLayout()
         self.scan_cur_set_btn = QPushButton("Scan Current Settings")
         self.auto_set_btn = QPushButton("Auto Set")
         self.save_set_btn = QPushButton("Set Settings")
-        buttons_row.addWidget(self.scan_cur_set_btn)
-        buttons_row.addWidget(self.auto_set_btn)
-        buttons_row.addWidget(self.save_set_btn)
+        btn_row.addWidget(self.scan_cur_set_btn)
+        btn_row.addWidget(self.auto_set_btn)
+        btn_row.addWidget(self.save_set_btn)
 
 
         settings_layout.addLayout(v_div_row)
         settings_layout.addLayout(us_div_row)
         settings_layout.addLayout(offset_row)
         settings_layout.addLayout(trigger_row)
-        settings_layout.addLayout(buttons_row)
+        settings_layout.addLayout(btn_row)
         layout.addLayout(settings_layout)
 
 
@@ -124,7 +124,7 @@ class OscilloscopeConfigurePanel(QGroupBox):
         type_row.addWidget(QLabel("Measurement Type:"))
         self.type_combo = QComboBox()
         self.type_combo.setEditable(False)
-        self.type_combo.addItems(["Single", "Period of time"])
+        self.type_combo.addItems(["Single", "Period of time", "Sweep"])
         type_row.addWidget(self.type_combo)
         layout.addLayout(type_row)
 
@@ -137,14 +137,40 @@ class OscilloscopeConfigurePanel(QGroupBox):
         pot_row.addWidget(QLabel("Measurements/s: "))
         self.pot_measurement_s_input = QLineEdit()
         pot_row.addWidget(self.pot_measurement_s_input)
-        self.pot_widget.setLayout(pot_row)
         pot_row.setContentsMargins(0, 0, 0, 0)
+        
+        self.pot_widget.setLayout(pot_row)
         layout.addWidget(self.pot_widget)
         self.pot_widget.setVisible(False)
 
-        # Start buttons
+        # Sweep settings
+        self.sweep_widget = QWidget()
+        sweep_row = QHBoxLayout()
+        sweep_row.addWidget(QLabel("Start Freq(Hz): "))
+        self.sweep_start_input = QLineEdit()
+        sweep_row.addWidget(self.sweep_start_input)
+        sweep_row.addWidget(QLabel("Stop Freq(Hz): "))
+        self.sweep_stop_input = QLineEdit()
+        sweep_row.addWidget(self.sweep_stop_input)
+        sweep_row.addWidget(QLabel("Points: "))
+        self.sweep_points_input = QLineEdit()
+        sweep_row.addWidget(self.sweep_points_input)
+        sweep_row.setContentsMargins(0, 0, 0, 0)
+
+        self.sweep_widget.setLayout(sweep_row)
+        layout.addWidget(self.sweep_widget)
+        self.sweep_widget.setVisible(False)
+
+
+        # Measurement buttons
+        measurement_btn_row = QHBoxLayout()
         self.start_measurement_btn = QPushButton("Start Measurement")
-        layout.addWidget(self.start_measurement_btn)
+        self.stop_btn = QPushButton("Cancel")
+        self.stop_btn.setEnabled(False)
+        self.stop_btn.setVisible(False)
+        measurement_btn_row.addWidget(self.start_measurement_btn)
+        measurement_btn_row.addWidget(self.stop_btn)
+        layout.addLayout(measurement_btn_row)
 
         #Signals
         self.type_combo.currentIndexChanged.connect(self.update_pot_visibility)
@@ -152,6 +178,8 @@ class OscilloscopeConfigurePanel(QGroupBox):
     def update_pot_visibility(self):
         selected = self.type_combo.currentText()
         self.pot_widget.setVisible(selected == "Period of time")
+        self.sweep_widget.setVisible(selected == "Sweep")
+        self.stop_btn.setVisible(selected != "Single")
 
 # Panel for configuring the function generator settings
 class FunctionGeneratorConfigurePanel(QGroupBox):

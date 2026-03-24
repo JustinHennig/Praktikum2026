@@ -28,5 +28,6 @@ class DeviceWorker(QObject):
             except Exception as e:
                 self.error_occurred.emit(task_id, str(e))
 
+    # Method to stop the worker thread (not cancel ongoing tasks, but prevents new tasks from being processed)
     def stop(self):
         self._queue.put((None, None, (), {}))
