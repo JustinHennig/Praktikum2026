@@ -11,7 +11,7 @@ def main():
     window = MainWindow()
     window.show()
     # Inject mock data for testing, this can be removed when the actual measurement data is being used
-    inject_mock_data(window) 
+    #inject_mock_data(window) 
     app.exec()
 
 if __name__ == "__main__":
