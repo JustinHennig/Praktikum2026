@@ -1,4 +1,5 @@
-# Script to initialize the database
+# Creates the database schema (tables). No data is inserted.
+# Run load_mock_data.py separately to populate sample data.
 
 import sqlite3
 from pathlib import Path
@@ -19,6 +20,5 @@ if __name__ == "__main__":
 
     with sqlite3.connect(DB_PATH) as conn:
         run_sql_file(conn, SCHEMA_DIR / "01_schema.sql")
-        run_sql_file(conn, SCHEMA_DIR / "02_seed.sql")
 
     print("Done.")

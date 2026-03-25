@@ -1,5 +1,5 @@
-# Drops all application tables from the database.
-# All SQL is kept in 03_drop_tables.sql — no inline SQL here.
+# Inserts sample/mock data into the database.
+# Run initialize.py first to ensure the schema exists.
 
 import sqlite3
 from pathlib import Path
@@ -16,11 +16,12 @@ def run_sql_file(conn: sqlite3.Connection, path: Path):
 if __name__ == "__main__":
     if not DB_PATH.exists():
         print(f"Database not found: {DB_PATH.resolve()}")
+        print("Run initialize.py first to create the schema.")
         raise SystemExit(1)
 
-    print(f"Dropping tables from: {DB_PATH.resolve()}")
+    print(f"Loading mock data into: {DB_PATH.resolve()}")
 
     with sqlite3.connect(DB_PATH) as conn:
-        run_sql_file(conn, SCHEMA_DIR / "03_drop_tables.sql")
+        run_sql_file(conn, SCHEMA_DIR / "02_load_mock_data.sql")
 
     print("Done.")

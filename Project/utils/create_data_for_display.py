@@ -5,11 +5,9 @@ import random
 
 
 def _oscilloscope_row(resource: str, channel: int, base_freq: float) -> dict:
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return {
         "Resource": resource,
         "Channel": channel,
-        "Time": ts,
         "v_div_mv": "500",
         "t_div_ms": "1.0",
         "offset_mv": "0.0",
@@ -22,11 +20,9 @@ def _oscilloscope_row(resource: str, channel: int, base_freq: float) -> dict:
 
 
 def _generator_row(resource: str, channel: int, waveform: str, freq: float) -> dict:
-    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return {
         "Resource":  resource,
         "Channel":   channel,
-        "Time":      ts,
         "Waveform":  waveform,
         "Frequency": f"{freq:.2f}",
         "Amplitude": f"{3.30:.2f}",
@@ -47,10 +43,13 @@ def inject_mock_data(window, device: str = "oscilloscope", rows: int = 5):
     display = window.measurement_display
     resource = "MOCK::RESOURCE::0001"
     channel = 1
+    session_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    for _ in range(rows):
+    for i in range(rows):
         if device == "generator":
             data = _generator_row(resource, channel, waveform="SINE", freq=1000.0)
         else:
             data = _oscilloscope_row(resource, channel, base_freq=1000.0)
+        data["Time"] = session_time
+        data["Elapsed_Time"] = f"{i:g}"
         display.add_measurement(data)

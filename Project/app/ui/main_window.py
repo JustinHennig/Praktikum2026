@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
         self.pot_measurement = PeriodOfTimeMeasurement(self)
         self.pot_measurement.tick.connect(self.on_pot_tick)
         self.pot_measurement.finished.connect(self.on_pot_finished)
+        self._measurement_start: datetime.datetime | None = None
 
         widget = QWidget()
         widget.setLayout(layoutWhole)
@@ -166,6 +167,7 @@ class MainWindow(QMainWindow):
         if confirm != QMessageBox.StandardButton.Ok:
             return
         self.measurement_display.clear_display()
+        self._measurement_start = datetime.datetime.now()
 
         # Depending on the measurement type, either take a single measurement or continuously measure for a period of time
         if measurement_type == "Period of time":
@@ -307,6 +309,11 @@ class MainWindow(QMainWindow):
             case "trigger":
                 self.oscilloscope_panel.trigger_input.setText(result)
             case "measurement":
+                elapsed = (
+                    (datetime.datetime.now() - self._measurement_start).total_seconds()
+                    if self._measurement_start else 0.0
+                )
+                result["Elapsed_Time"] = f"{elapsed:g}"
                 if result.get("Frequency") is not None:
                     self.oscilloscope_panel.frequency_label.setText(result["Frequency"])
                 if result.get("Amplitude") is not None:
@@ -317,7 +324,10 @@ class MainWindow(QMainWindow):
                     self.oscilloscope_panel.rms_label.setText(result["RMS"])
                 self.measurement_display.add_measurement(result)
             case "sweep":
+                sweep_start = self._measurement_start or datetime.datetime.now()
                 for row in result:
+                    elapsed = (datetime.datetime.now() - sweep_start).total_seconds()
+                    row["Elapsed_Time"] = f"{elapsed:g}"
                     self.measurement_display.add_measurement(row)
                 self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
 

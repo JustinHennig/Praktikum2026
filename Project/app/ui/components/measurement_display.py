@@ -6,6 +6,17 @@ from PySide6.QtCore import Signal
 from app.storage.sqlite_database import insert_measurement_settings, insert_measurement, get_measurements_by_id, get_all_measurement_settings
 from app.ui.components.load_delete_measurement_window import LoadMeasurementDialog
 
+_UNITS = {
+    "Elapsed_Time": "Time (s)",
+    "Frequency":    "Frequency (Hz)",
+    "Amplitude":    "Amplitude (V)",
+    "Peak-to-Peak": "Peak-to-Peak (V)",
+    "RMS":          "RMS (V)",
+    "Waveform":     "Waveform",
+    "Offset":       "Offset (V)",
+    "Phase":        "Phase (°)",
+}
+
 class MeasurementDisplay(QGroupBox):
     # Signal to notify the main window that a new measurement has been added, so that the configuration can be updated
     configuration_loaded = Signal(dict)
@@ -55,13 +66,14 @@ class MeasurementDisplay(QGroupBox):
         self.measurement_data.append(data)
 
         # Keys to display — skip metadata that is not useful in the table
-        skip_keys = {"Resource", "Channel", "v_div_mv", "t_div_ms", "offset_mv", "trigger_level"}
-        columns = [k for k in data if k not in skip_keys]
+        skip_keys = {"Resource", "Channel", "Time", "v_div_mv", "t_div_ms", "offset_mv", "trigger_level"}
+        other_cols = [k for k in data if k not in skip_keys and k != "Elapsed_Time"]
+        columns = (["Elapsed_Time"] if "Elapsed_Time" in data else []) + other_cols
 
         # On the first row, update the table headers to match the actual data keys
         if self.table.rowCount() == 0:
             self.table.setColumnCount(len(columns))
-            self.table.setHorizontalHeaderLabels(columns)
+            self.table.setHorizontalHeaderLabels([_UNITS.get(c, c) for c in columns])
 
         row = self.table.rowCount()
         self.table.insertRow(row)
@@ -74,7 +86,7 @@ class MeasurementDisplay(QGroupBox):
             return
 
         # Keys that are never stored as measurement values
-        meta_keys = {"Resource", "Time", "Name"}
+        meta_keys = {"Resource", "Time", "Elapsed_Time", "Name"}
         # Keys that describe the instrument configuration → go into 'parameters'
         config_keys = {"Channel", "v_div_mv", "t_div_ms", "offset_mv", "trigger_level"}
 
@@ -93,13 +105,14 @@ class MeasurementDisplay(QGroupBox):
             measurement_id = insert_measurement_settings(
                 device=device,
                 name=self.measurement_name or "Unnamed Measurement",
+                date_time=first.get("Time", ""),
                 parameters=parameters,
             )
             for data in self.measurement_data:
                 values = {k: data.get(k) for k in measurement_keys}
                 insert_measurement(
                     measurement_id=measurement_id,
-                    time=data.get("Time", ""),
+                    time=data.get("Elapsed_Time", ""),
                     values=values
                 )
             QMessageBox.information(
@@ -140,7 +153,7 @@ class MeasurementDisplay(QGroupBox):
         self.clear_display()
         for m in measurements:
             # Reconstruct a flat dict matching what add_measurement expects
-            data = {"Time": m["time"], **m["values"]}
+            data = {"Elapsed_Time": m["time"], **m["values"]}
             self.add_measurement(data)
 
     # Function to clear the display

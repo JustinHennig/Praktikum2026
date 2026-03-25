@@ -11,6 +11,7 @@ class MeasurementSettings(Base):
     __tablename__ = "measurement_settings"
 
     measurement_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    date_time: Mapped[str] = mapped_column(String, nullable=False)
     device: Mapped[str] = mapped_column(String, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     configuration: Mapped[str] = mapped_column(String, nullable=False)

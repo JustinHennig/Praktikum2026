@@ -3,7 +3,7 @@
 import sys
 from PySide6.QtWidgets import QApplication
 from app.ui.main_window import MainWindow
-from utils.create_data_for_displa import inject_mock_data
+from utils.create_data_for_display import inject_mock_data
 
 
 def main():
