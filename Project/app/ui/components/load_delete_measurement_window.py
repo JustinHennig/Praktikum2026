@@ -9,33 +9,32 @@ from PySide6.QtWidgets import (
 from app.storage.sqlite_database import delete_measurement_by_id
 
 class LoadMeasurementDialog(QDialog):
-    def __init__(self, settings: list[dict], parent=None):
+    def __init__(self, measurements: list[dict], parent=None):
         super().__init__(parent)
         self.setWindowTitle("Load Measurement from Database")
         self.setMinimumSize(700, 350)
         self.selected_id: int | None = None
 
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Select a measurement configuration to load:"))
+        layout.addWidget(QLabel("Select a measurement to load:"))
 
-        # Create a table to display the measurement settings with 5 columns
+        # Create a table to display measurements with 4 columns
         self.table = QTableWidget()
-        self.table.setColumnCount(5)
-        self.table.setHorizontalHeaderLabels(["Measurement ID", "Date/Time", "Name", "Device", "Configuration"])
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["ID", "Name", "Date/Time", "Settings"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
 
-        # Fill the table with the measurement settings
-        for row_data in settings:
+        # Fill the table with the measurements
+        for row_data in measurements:
             row = self.table.rowCount()
             self.table.insertRow(row)
-            self.table.setItem(row, 0, QTableWidgetItem(str(row_data["measurement_id"])))
-            self.table.setItem(row, 1, QTableWidgetItem(row_data["date_time"]))
-            self.table.setItem(row, 2, QTableWidgetItem(row_data["name"]))
-            self.table.setItem(row, 3, QTableWidgetItem(row_data["device"]))
-            self.table.setItem(row, 4, QTableWidgetItem(str(row_data.get("configuration", ""))))
+            self.table.setItem(row, 0, QTableWidgetItem(str(row_data["id"])))
+            self.table.setItem(row, 1, QTableWidgetItem(row_data["name"]))
+            self.table.setItem(row, 2, QTableWidgetItem(row_data["date_time"]))
+            self.table.setItem(row, 3, QTableWidgetItem(str(len(row_data.get("settings", [])))))
 
         layout.addWidget(self.table)
 

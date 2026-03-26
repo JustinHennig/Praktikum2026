@@ -3,14 +3,14 @@
 import sys
 from PySide6.QtWidgets import QApplication
 from app.ui.main_window import MainWindow
-from utils.create_data_for_display import inject_mock_data
+from utils.mock_data_measurement_display import inject_mock_data
 
 
 def main():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    # Inject mock data for testing, this can be removed when the actual measurement data is being used
+    #Inject mock data for testing, this can be removed when the actual measurement data is being used
     #inject_mock_data(window) 
     app.exec()
 

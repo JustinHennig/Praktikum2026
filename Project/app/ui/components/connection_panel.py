@@ -52,7 +52,7 @@ class ConnectionPanel(QGroupBox):
 
         # Status
         self.status_label = QLabel("Status: Disconnected")
-        self.status_label.setStyleSheet("color: white;")
+        self.status_label.setStyleSheet("")
         self.status_label.setContentsMargins(0, 10, 0, 0)
         self.status_label.setWordWrap(True)
         self.status_label.setVisible(False)
@@ -74,7 +74,7 @@ class ConnectionPanel(QGroupBox):
     # Function to scan for devices and update the resource combo box using the scan_for_devices function from device_functions.py
     def scan_for_devices(self):
         self.scan_btn.setEnabled(False)
-        self.status_label.setStyleSheet("color: white;")
+        self.status_label.setStyleSheet("")
         self.status_label.setText("Scanning...")
         self.status_label.setVisible(True)
         self._worker.submit("scan", scan_for_devices)
@@ -91,7 +91,7 @@ class ConnectionPanel(QGroupBox):
         if not resource:
             return
         self.idn_btn.setEnabled(False)
-        self.status_label.setStyleSheet("color: white;")
+        self.status_label.setStyleSheet("")
         self.status_label.setText("Asking IDN...")
         self.status_label.setVisible(True)
         self._worker.submit("idn", ask_idn, resource)
@@ -105,11 +105,11 @@ class ConnectionPanel(QGroupBox):
                 self.osc_resource_combo.addItems(result)
                 self.gen_resource_combo.clear()
                 self.gen_resource_combo.addItems(result)
-                self.status_label.setStyleSheet("color: white;")
+                self.status_label.setStyleSheet("")
                 self.status_label.setText(f"Status: {len(result)} device(s) found")
             case "idn":
                 self.idn_btn.setEnabled(True)
-                self.status_label.setStyleSheet("color: white;")
+                self.status_label.setStyleSheet("")
                 self.status_label.setText(f"IDN: {result}")
 
     def _on_error(self, task_id: str, error: str):

@@ -3,7 +3,7 @@
 
 from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QHeaderView, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QDialog
 from PySide6.QtCore import Signal
-from app.storage.sqlite_database import insert_measurement_settings, insert_measurement, get_measurements_by_id, get_all_measurement_settings
+from app.storage.sqlite_database import insert_measurement, insert_measurement_setting, insert_measurement_value, get_values_by_setting_id, get_all_measurements
 from app.ui.components.load_delete_measurement_window import LoadMeasurementDialog
 
 _UNITS = {
@@ -102,16 +102,19 @@ class MeasurementDisplay(QGroupBox):
         measurement_keys = [k for k in first if k not in meta_keys and k not in config_keys]
 
         try:
-            measurement_id = insert_measurement_settings(
-                device=device,
+            measurement_id = insert_measurement(
                 name=self.measurement_name or "Unnamed Measurement",
                 date_time=first.get("Time", ""),
-                parameters=parameters,
+            )
+            setting_id = insert_measurement_setting(
+                measurement_id=measurement_id,
+                device=device,
+                configuration=parameters,
             )
             for data in self.measurement_data:
                 values = {k: data.get(k) for k in measurement_keys}
-                insert_measurement(
-                    measurement_id=measurement_id,
+                insert_measurement_value(
+                    measurement_setting_id=setting_id,
                     time=data.get("Elapsed_Time", ""),
                     values=values
                 )
@@ -125,35 +128,40 @@ class MeasurementDisplay(QGroupBox):
 
     # Function to load the measurement data from the database and display it in the table
     def load_measurements_from_db(self):
-        settings = get_all_measurement_settings()
-        if not settings:
+        measurements = get_all_measurements()
+        if not measurements:
             QMessageBox.information(self, "Load", "No measurements found in the database.")
             return
 
-        dialog = LoadMeasurementDialog(settings, parent=self)
+        dialog = LoadMeasurementDialog(measurements, parent=self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
-        # Check if a measurement was selected
         if dialog.selected_id is None:
             QMessageBox.information(self, "Load", "No measurement selected.")
             return
-        
-        # Load the measurement entries for the selected measurement_id
-        measurements = get_measurements_by_id(dialog.selected_id)
-        if not measurements:
+
+        # Find the selected measurement and load the first setting's values
+        selected = next((m for m in measurements if m["id"] == dialog.selected_id), None)
+        if selected is None or not selected["settings"]:
             QMessageBox.information(self, "Load", "No data rows for this measurement.")
             return
-        
-        # Look for the corresponding settings to reconstruct the configuration in the panel
-        selected_settings = next((s for s in settings if s["measurement_id"] == dialog.selected_id), None)
-        if selected_settings is not None:
-            self.configuration_loaded.emit(selected_settings)  # Emit the configuration to update the device panel
+
+        first_setting = selected["settings"][0]
+        values = get_values_by_setting_id(first_setting["id"])
+        if not values:
+            QMessageBox.information(self, "Load", "No data rows for this measurement.")
+            return
+
+        # Emit the setting info so the device panel can restore its configuration
+        self.configuration_loaded.emit({
+            "name": selected["name"],
+            "configuration": first_setting["configuration"],
+        })
 
         self.clear_display()
-        for m in measurements:
-            # Reconstruct a flat dict matching what add_measurement expects
-            data = {"Elapsed_Time": m["time"], **m["values"]}
+        for v in values:
+            data = {"Elapsed_Time": v["time"], **v["values"]}
             self.add_measurement(data)
 
     # Function to clear the display
