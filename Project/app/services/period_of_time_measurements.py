@@ -6,8 +6,8 @@ class PeriodOfTimeMeasurement(QObject):
     tick = Signal(str, int, bool, bool, bool, bool)
     finished = Signal()
 
-    def __init__(self, parent=None):
-        super().__init__(parent)
+    def __init__(self):
+        super().__init__()
         self.timer = QTimer()
         self.timer.timeout.connect(self.on_tick)
         self.remaining = 0

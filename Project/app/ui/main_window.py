@@ -17,6 +17,7 @@ from app.ui.components.measurement_display import MeasurementDisplay
 from app.ui.components.device_configure_panels import FunctionGeneratorConfigurePanel, OscilloscopeConfigurePanel
 from app.ui.components.connection_panel import ConnectionPanel
 from app.services.period_of_time_measurements import PeriodOfTimeMeasurement
+from app.services.snapshot import SnapshotService
 import datetime
 
 class MainWindow(QMainWindow):
@@ -78,10 +79,15 @@ class MainWindow(QMainWindow):
         self.oscilloscope_panel.measurement_name_input.textChanged.connect(self.measurement_display.set_measurement_name)
 
         # State for timed measurement loop
-        self.pot_measurement = PeriodOfTimeMeasurement(self)
+        self.pot_measurement = PeriodOfTimeMeasurement()
         self.pot_measurement.tick.connect(self.on_pot_tick)
         self.pot_measurement.finished.connect(self.on_pot_finished)
         self._measurement_start: datetime.datetime | None = None
+
+        # Snapshot service
+        self.snapshot_service = SnapshotService()
+        self.snapshot_service.finished.connect(self.on_snapshot_finished)
+        self.snapshot_service.error.connect(self.on_snapshot_error)
 
         widget = QWidget()
         widget.setLayout(layoutWhole)
@@ -157,7 +163,20 @@ class MainWindow(QMainWindow):
     # Function to start the measurement
     def start_measurement(self):
         resource = self.current_osc_resource
-        channel = self.current_osc_channel
+        channel  = self.current_osc_channel
+
+        if not resource:
+            return
+
+        # Snapshot mode
+        if self.oscilloscope_panel.parameter_combo.currentText() == 'Snapshot':
+            points   = int(self.oscilloscope_panel.snapshot_points_input.text())
+            filename = self.oscilloscope_panel.snapshot_filename_input.text() or 'snapshot'
+            smoothing = self.oscilloscope_panel.snapshot_smoothing_combo.currentText()
+            self.oscilloscope_panel.start_measurement_btn.setEnabled(False)
+            self.sds_worker.submit('snapshot', self.snapshot_service.run, resource, channel, points, filename, smoothing)
+            return
+
         measurement_type = self.oscilloscope_panel.type_combo.currentText()
 
         if not resource:
@@ -335,6 +354,9 @@ class MainWindow(QMainWindow):
                     row["Elapsed_Time"] = f"{elapsed:g}"
                     self.measurement_display.add_measurement(row)
                 self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
+            case "snapshot":
+                # result is None; finished/error signals handled separately
+                pass
 
     # Handles results from the SDG generator worker
     def on_sdg_result(self, task_id: str, result):
@@ -345,6 +367,14 @@ class MainWindow(QMainWindow):
     # Handles errors from both device workers
     def on_device_error(self, task_id: str, error: str):
         print(f"[{task_id}] Device error: {error}")
+
+    def on_snapshot_finished(self, path: str):
+        self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
+        print(f"[snapshot] Saved: {path}")
+
+    def on_snapshot_error(self, error: str):
+        self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
+        print(f"[snapshot] Error: {error}")
 
     # Overwriting the close eveent of the main window to cleanly stop all worker threads when the application is closed
     def closeEvent(self, event):

@@ -68,3 +68,43 @@ def get_rms(resource: str, channel: int):
     inst.write(f':MEAS:SIMP:SOUR C{channel}')
     rms = float(inst.query(':MEAS:SIMP:VAL? RMS').strip())
     return f"{rms:.4f}"
+
+# Methods for the snapshot functionality
+def start_trigger(resource: str):
+    inst = open_message_resource(resource)
+    inst.write(':TRIGger:RUN')
+
+def stop_trigger(resource: str):
+    inst = open_message_resource(resource)
+    inst.write(':TRIGger:STOP')
+
+def set_waveform_source(resource: str, channel: int):
+    inst = open_message_resource(resource)
+    inst.write(f':WAVeform:SOURce C{channel}')
+
+def set_waveform_start(resource: str, start: int):
+    inst = open_message_resource(resource)
+    inst.write(f':WAVeform:STARt {start}')
+
+def set_waveform_width(resource: str, width: str):
+    inst = open_message_resource(resource)
+    inst.write(f':WAVeform:WIDTh {width}')
+
+def get_preamble(resource: str) -> bytes:
+    inst = open_message_resource(resource)
+    inst.write(':WAVeform:PREamble?')
+    return inst.read_raw()
+
+def get_max_points(resource: str) -> int:
+    inst = open_message_resource(resource)
+    max_points = int(inst.query(':WAVeform:MAXPoint?').strip())
+    return max_points
+
+def set_waveform_points(resource: str, points: int):
+    inst = open_message_resource(resource)
+    inst.write(f':WAVeform:POINt {points}')
+
+def get_waveform_data(resource: str) -> bytes:
+    inst = open_message_resource(resource)
+    inst.write(':WAVeform:DATA?')
+    return inst.read_raw()
