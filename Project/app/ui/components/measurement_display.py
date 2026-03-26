@@ -2,7 +2,8 @@
 # the measurement data in a table and also provides buttons to save the data, load the data, clear the display and delete a selected row.
 
 from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QHeaderView, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QDialog
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QFont
 from app.storage.sqlite_database import insert_measurement, insert_measurement_setting, insert_measurement_value, get_values_by_setting_id, get_all_measurements
 from app.ui.components.load_delete_measurement_window import LoadMeasurementDialog
 
@@ -57,6 +58,7 @@ class MeasurementDisplay(QGroupBox):
         # Initialize measurement data list
         self.measurement_data = []
         self.measurement_name = ""
+        self._columns: list = []  # stores the column keys once the first real row arrives
 
     def set_measurement_name(self, name: str):
         self.measurement_name = name.strip()
@@ -70,19 +72,39 @@ class MeasurementDisplay(QGroupBox):
         other_cols = [k for k in data if k not in skip_keys and k != "Elapsed_Time"]
         columns = (["Elapsed_Time"] if "Elapsed_Time" in data else []) + other_cols
 
-        # On the first row, update the table headers to match the actual data keys
-        if self.table.rowCount() == 0:
+        # Set headers on the very first real data row
+        if not self._columns:
+            self._columns = columns
             self.table.setColumnCount(len(columns))
             self.table.setHorizontalHeaderLabels([_UNITS.get(c, c) for c in columns])
+            # Re-span any separator rows that were inserted before columns were known
+            for r in range(self.table.rowCount()):
+                if self.table.columnSpan(r, 0) > 1:
+                    self.table.setSpan(r, 0, 1, len(columns))
 
         row = self.table.rowCount()
         self.table.insertRow(row)
-        for col, key in enumerate(columns):
+        for col, key in enumerate(self._columns):
             value = data.get(key)
             self.table.setItem(row, col, QTableWidgetItem("" if value is None else str(value)))
 
+    # Insert a full-width separator row to visually group measurement settings
+    def add_separator(self, label: str):
+        col_count = len(self._columns) if self._columns else self.table.columnCount()
+        self.measurement_data.append({"__separator__": label})
+        row = self.table.rowCount()
+        self.table.insertRow(row)
+        item = QTableWidgetItem(label)
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        font = QFont()
+        font.setBold(True)
+        item.setFont(font)
+        self.table.setItem(row, 0, item)
+        self.table.setSpan(row, 0, 1, max(col_count, 1))
+
     def insert_measurement_into_db(self):
-        if not self.measurement_data:
+        real_data = [d for d in self.measurement_data if "__separator__" not in d]
+        if not real_data:
             return
 
         # Keys that are never stored as measurement values
@@ -90,7 +112,7 @@ class MeasurementDisplay(QGroupBox):
         # Keys that describe the instrument configuration → go into 'parameters'
         config_keys = {"Channel", "v_div_mv", "t_div_ms", "offset_mv", "trigger_level"}
 
-        first = self.measurement_data[0]
+        first = real_data[0]
 
         # Device is identified by the instrument resource address
         device = first.get("Resource", "Unknown")
@@ -111,7 +133,7 @@ class MeasurementDisplay(QGroupBox):
                 device=device,
                 configuration=parameters,
             )
-            for data in self.measurement_data:
+            for data in real_data:
                 values = {k: data.get(k) for k in measurement_keys}
                 insert_measurement_value(
                     measurement_setting_id=setting_id,
@@ -141,28 +163,26 @@ class MeasurementDisplay(QGroupBox):
             QMessageBox.information(self, "Load", "No measurement selected.")
             return
 
-        # Find the selected measurement and load the first setting's values
+        # Find the selected measurement and load all settings with separator rows
         selected = next((m for m in measurements if m["id"] == dialog.selected_id), None)
         if selected is None or not selected["settings"]:
             QMessageBox.information(self, "Load", "No data rows for this measurement.")
             return
 
+        # Emit configuration for the first setting so the device panel can restore its state
         first_setting = selected["settings"][0]
-        values = get_values_by_setting_id(first_setting["id"])
-        if not values:
-            QMessageBox.information(self, "Load", "No data rows for this measurement.")
-            return
-
-        # Emit the setting info so the device panel can restore its configuration
         self.configuration_loaded.emit({
             "name": selected["name"],
             "configuration": first_setting["configuration"],
         })
 
         self.clear_display()
-        for v in values:
-            data = {"Elapsed_Time": v["time"], **v["values"]}
-            self.add_measurement(data)
+        for setting in selected["settings"]:
+            self.add_separator(f"Measurement Setting {setting['id']}")
+            values = get_values_by_setting_id(setting["id"])
+            for v in values:
+                data = {"Elapsed_Time": v["time"], **v["values"]}
+                self.add_measurement(data)
 
     # Function to clear the display
     def clear_display(self):
@@ -170,6 +190,7 @@ class MeasurementDisplay(QGroupBox):
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(["Time", "Col. 1", "Col. 2", "Col. 3", "Col. 4"])
         self.measurement_data.clear()
+        self._columns = []
 
     # Function to delete the selected row
     def delete_selected_row(self):

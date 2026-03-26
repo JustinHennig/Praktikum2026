@@ -162,11 +162,16 @@ class MainWindow(QMainWindow):
 
         if not resource:
             return
-        
-        confirm = QMessageBox.question(self, "Start Measurement", "Display needs to be cleared for a new measurement.", QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
-        if confirm != QMessageBox.StandardButton.Ok:
-            return
-        self.measurement_display.clear_display()
+
+        # If the display already has data, add a separator row for the new setting;
+        # otherwise start with a clean display
+        real_data = [d for d in self.measurement_display.measurement_data if "__separator__" not in d]
+        if real_data:
+            label = f"New Setting  —  Ch {channel}  |  {measurement_type}"
+            self.measurement_display.add_separator(label)
+        else:
+            self.measurement_display.clear_display()
+
         self._measurement_start = datetime.datetime.now()
 
         # Depending on the measurement type, either take a single measurement or continuously measure for a period of time
