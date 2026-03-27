@@ -7,8 +7,7 @@ from PySide6.QtGui import QPainter, QLinearGradient, QColor, QPainterPath, QBrus
 from PySide6.QtSvgWidgets import QSvgWidget
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "assets")
-LOGO_LIGHT = os.path.join(ASSETS_DIR, "planqc_logo_light.svg")      # white logo — for dark bg
-LOGO_DARK  = os.path.join(ASSETS_DIR, "planqc_logo_gradient_dark.svg")  # coloured logo — for light bg
+LOGO = os.path.join(ASSETS_DIR, "planqc_logo.svg")
 
 
 class _ToggleSwitch(QWidget):
@@ -107,7 +106,7 @@ class HeaderPanel(QWidget):
         # Preserve aspect ratio: the SVG viewBox is ~425 x 142 → ratio ≈ 2.995
         _LOGO_H = 40
         _LOGO_W = round(_LOGO_H * (425.1968384 / 141.7323303))
-        self._logo = QSvgWidget(LOGO_LIGHT, self)
+        self._logo = QSvgWidget(LOGO, self)
         self._logo.setFixedSize(QSize(_LOGO_W, _LOGO_H))
         self._logo.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self._logo.setStyleSheet("background: transparent;")
@@ -156,6 +155,4 @@ class HeaderPanel(QWidget):
     def _on_toggle(self, is_light: bool):
         self._is_light = is_light
         self._toggle_label.setText("Light" if is_light else "Dark")
-        logo_path = LOGO_DARK if is_light else LOGO_LIGHT
-        self._logo.load(logo_path)
         self.theme_changed.emit(is_light)
