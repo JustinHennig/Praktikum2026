@@ -3,8 +3,10 @@
 # while the left side contains the connection panel and the configuration panels for the oscilloscope and function generator.
 # The right side contains the measurement display
 
+import os
 from PySide6.QtWidgets import QHBoxLayout, QMainWindow, QMessageBox, QStackedWidget, QVBoxLayout, QWidget
 from PySide6.QtCore import QThread
+from PySide6.QtWidgets import QApplication
 from app.services.sweep_measurement import run_sweep
 from app.services.device_worker import DeviceWorker
 from app.scpi_commands.sds_commands import(
@@ -16,9 +18,17 @@ from app.services.single_measurement import collect_measurement
 from app.ui.components.measurement_display import MeasurementDisplay
 from app.ui.components.device_configure_panels import FunctionGeneratorConfigurePanel, OscilloscopeConfigurePanel
 from app.ui.components.connection_panel import ConnectionPanel
+from app.ui.components.header_panel import HeaderPanel
 from app.services.period_of_time_measurements import PeriodOfTimeMeasurement
 from app.services.snapshot import SnapshotService
 import datetime
+
+_STYLING_DIR = os.path.join(os.path.dirname(__file__), "styling")
+
+def _load_qss(filename: str) -> str:
+    path = os.path.join(_STYLING_DIR, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -43,7 +53,18 @@ class MainWindow(QMainWindow):
         self.sdg_thread.start()
 
         # Layouts
+        layoutRoot = QVBoxLayout()
+        layoutRoot.setContentsMargins(0, 0, 0, 0)
+        layoutRoot.setSpacing(0)
+
+        # Header
+        self.header = HeaderPanel()
+        self.header.theme_changed.connect(self._apply_theme)
+        layoutRoot.addWidget(self.header)
+
         layoutWhole = QHBoxLayout()
+        layoutWhole.setContentsMargins(8, 8, 8, 8)
+        layoutWhole.setSpacing(8)
         layoutLeftSide = QVBoxLayout()
 
         # Connection Panel
@@ -55,13 +76,14 @@ class MainWindow(QMainWindow):
         self.oscilloscope_panel = OscilloscopeConfigurePanel()
         self.generator_panel = FunctionGeneratorConfigurePanel()
         self.config_stack.addWidget(self.oscilloscope_panel)
-        self.config_stack.addWidget(self.generator_panel) 
+        self.config_stack.addWidget(self.generator_panel)
         layoutLeftSide.addWidget(self.config_stack, stretch=5)
 
         # Measurement Display
         self.measurement_display = MeasurementDisplay()
         layoutWhole.addLayout(layoutLeftSide, stretch=2)
         layoutWhole.addWidget(self.measurement_display, stretch=3)
+        layoutRoot.addLayout(layoutWhole)
 
         # Signals
         self.connection_panel.device_combo.currentIndexChanged.connect(self.config_stack.setCurrentIndex)
@@ -90,8 +112,15 @@ class MainWindow(QMainWindow):
         self.snapshot_service.error.connect(self._on_snapshot_error)
 
         widget = QWidget()
-        widget.setLayout(layoutWhole)
+        widget.setLayout(layoutRoot)
         self.setCentralWidget(widget)
+
+    # ── Theme helpers ──────────────────────────────
+    def _apply_theme(self, is_light: bool):
+        qss = _load_qss("theme_light.qss" if is_light else "theme_dark.qss")
+        app = QApplication.instance()
+        if isinstance(app, QApplication):
+            app.setStyleSheet(qss)
 
     # Properties for quick access to the current resource and channel
     @property

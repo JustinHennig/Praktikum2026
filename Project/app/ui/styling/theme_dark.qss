@@ -1,0 +1,175 @@
+/* ── Dark Theme ──────────────────────────────────── */
+QWidget {
+    background-color: #1a1a2e;
+    color: #dde2f0;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 12px;
+}
+
+/* ── Group Boxes ─────────────────────────────────── */
+QGroupBox {
+    border: 1px solid #36365a;
+    border-radius: 6px;
+    margin-top: 16px;
+    padding-top: 10px;
+    font-weight: bold;
+    font-size: 13px;
+    color: #7eb8f7;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 8px;
+    left: 10px;
+}
+
+/* ── Buttons ─────────────────────────────────────── */
+QPushButton {
+    background-color: #7040C0;
+    color: #ffffff;
+    border: 1px solid #8B55D8;
+    border-radius: 5px;
+    padding: 5px 14px;
+    min-height: 26px;
+}
+QPushButton:hover {
+    background-color: #8250D8;
+    border-color: #9B65E8;
+    color: #ffffff;
+}
+QPushButton:pressed {
+    background-color: #5A30A8;
+}
+QPushButton:disabled {
+    background-color: #1c1c30;
+    color: #44446a;
+    border-color: #2e2e4a;
+}
+
+/* ── Line Edits ──────────────────────────────────── */
+QLineEdit {
+    background-color: #14142a;
+    color: #d0d8f0;
+    border: 1px solid #36365a;
+    border-radius: 4px;
+    padding: 4px 8px;
+    min-height: 22px;
+    selection-background-color: #3a28a0;
+}
+QLineEdit:focus {
+    border-color: #9070ff;
+    background-color: #18183a;
+}
+
+/* ── Combo Boxes ─────────────────────────────────── */
+QComboBox {
+    background-color: #14142a;
+    color: #d0d8f0;
+    border: 1px solid #36365a;
+    border-radius: 4px;
+    padding: 4px 8px;
+    min-height: 22px;
+}
+QComboBox:hover {
+    border-color: #9070ff;
+}
+QComboBox::drop-down {
+    border: none;
+    width: 22px;
+}
+QComboBox QAbstractItemView {
+    background-color: #1c1c36;
+    color: #d0d8f0;
+    border: 1px solid #44447a;
+    selection-background-color: #3a28a0;
+    outline: 0;
+}
+
+/* ── Check Boxes ─────────────────────────────────── */
+QCheckBox::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #44447a;
+    border-radius: 3px;
+    background-color: #14142a;
+}
+QCheckBox::indicator:checked {
+    background-color: #7040C0;
+    border-color: #9070ff;
+}
+
+/* ── Tables ──────────────────────────────────────── */
+QTableWidget {
+    background-color: #14142a;
+    alternate-background-color: #1c1c38;
+    gridline-color: #2a2a48;
+    color: #d0d8f0;
+    border: 1px solid #36365a;
+    border-radius: 4px;
+}
+QHeaderView::section {
+    background-color: #252546;
+    color: #7eb8f7;
+    padding: 6px 4px;
+    border: none;
+    border-right: 1px solid #36365a;
+    border-bottom: 2px solid #7040C0;
+    font-weight: bold;
+}
+QTableWidget::item:selected {
+    background-color: #3a28a0;
+    color: #ffffff;
+}
+QTableCornerButton::section {
+    background-color: #252546;
+}
+
+/* ── Scroll Bars ─────────────────────────────────── */
+QScrollBar:vertical {
+    background-color: #14142a;
+    width: 10px;
+    border-radius: 5px;
+}
+QScrollBar::handle:vertical {
+    background-color: #383868;
+    border-radius: 5px;
+    min-height: 24px;
+}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar:horizontal {
+    background-color: #14142a;
+    height: 10px;
+    border-radius: 5px;
+}
+QScrollBar::handle:horizontal {
+    background-color: #383868;
+    border-radius: 5px;
+    min-width: 24px;
+}
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal { width: 0; }
+
+/* ── Separators (QFrame HLine) ───────────────────── */
+QFrame#separator {
+    background-color: #36365a;
+    max-height: 1px;
+    border: none;
+}
+
+/* ── Dialogs & Message Boxes ─────────────────────── */
+QDialog     { background-color: #1a1a2e; }
+QMessageBox { background-color: #1a1a2e; }
+
+/* ── Named label variants ────────────────────────── */
+QLabel#section_header {
+    color: #7eb8f7;
+    font-weight: bold;
+}
+QLabel#value_display {
+    color: #4cd68a;
+    font-family: "Consolas", "Courier New", monospace;
+    font-weight: bold;
+    font-size: 13px;
+    min-width: 80px;
+}
