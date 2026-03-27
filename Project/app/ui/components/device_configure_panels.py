@@ -202,7 +202,7 @@ class OscilloscopeConfigurePanel(QGroupBox):
         sweep_row.addWidget(QLabel("Stop Freq(Hz): "))
         self.sweep_stop_input = QLineEdit()
         sweep_row.addWidget(self.sweep_stop_input)
-        sweep_row.addWidget(QLabel("Points: "))
+        sweep_row.addWidget(QLabel("Steps: "))
         self.sweep_points_input = QLineEdit()
         sweep_row.addWidget(self.sweep_points_input)
         sweep_row.setContentsMargins(0, 0, 0, 0)
@@ -224,48 +224,48 @@ class OscilloscopeConfigurePanel(QGroupBox):
         layout.addLayout(measurement_btn_row)
 
         #Signals
-        self.type_combo.currentIndexChanged.connect(self.update_pot_visibility)
-        self.parameter_combo.currentIndexChanged.connect(self.update_mode_visibility)
-        self.snapshot_points_slider.valueChanged.connect(self.slider_to_input)
-        self.snapshot_points_input.editingFinished.connect(self.input_to_slider)
+        self.type_combo.currentIndexChanged.connect(self._update_pot_visibility)
+        self.parameter_combo.currentIndexChanged.connect(self._update_mode_visibility)
+        self.snapshot_points_slider.valueChanged.connect(self._slider_to_input)
+        self.snapshot_points_input.editingFinished.connect(self._input_to_slider)
 
 
     # Logarthmic slider funtions
     POINTS_MIN = 10
     POINTS_MAX = 1_250_000
 
-    def slider_to_points(self, slider_val: int) -> int:
+    def _slider_to_points(self, slider_val: int) -> int:
         log_min = math.log10(self.POINTS_MIN)
         log_max = math.log10(self.POINTS_MAX)
         return round(10 ** (log_min + slider_val / 100 * (log_max - log_min)))
 
-    def points_to_slider(self, points: int) -> int:
+    def _points_to_slider(self, points: int) -> int:
         points = max(self.POINTS_MIN, min(self.POINTS_MAX, points))
         log_min = math.log10(self.POINTS_MIN)
         log_max = math.log10(self.POINTS_MAX)
         return round((math.log10(points) - log_min) / (log_max - log_min) * 100)
 
-    def slider_to_input(self, slider_val: int):
-        self.snapshot_points_input.setText(str(self.slider_to_points(slider_val)))
+    def _slider_to_input(self, slider_val: int):
+        self.snapshot_points_input.setText(str(self._slider_to_points(slider_val)))
 
-    def input_to_slider(self):
+    def _input_to_slider(self):
         try:
             points = int(self.snapshot_points_input.text())
         except ValueError:
             return
         self.snapshot_points_slider.blockSignals(True)
-        self.snapshot_points_slider.setValue(self.points_to_slider(points))
+        self.snapshot_points_slider.setValue(self._points_to_slider(points))
         self.snapshot_points_slider.blockSignals(False)
 
     # Update visibility of snapshot/live measurement settings based on mode selection
-    def update_mode_visibility(self):
+    def _update_mode_visibility(self):
         is_snapshot = self.parameter_combo.currentText() == "Snapshot"
         self.snapshot_widget.setVisible(is_snapshot)
         self.live_widget.setVisible(not is_snapshot)
         self.mode_label.setText("Snapshot configuration:" if is_snapshot else "Measurement Parameters:")
 
     # Update visibility of period of time and sweep settings based on measurement type selection
-    def update_pot_visibility(self):
+    def _update_pot_visibility(self):
         selected = self.type_combo.currentText()
         self.pot_widget.setVisible(selected == "Period of time")
         self.sweep_widget.setVisible(selected == "Sweep")

@@ -68,11 +68,11 @@ class ConnectionPanel(QGroupBox):
         self._thread.start()
 
         # Signals
-        self.scan_btn.clicked.connect(self.scan_for_devices)
-        self.idn_btn.clicked.connect(self.ask_idn)
+        self.scan_btn.clicked.connect(self._scan_for_devices)
+        self.idn_btn.clicked.connect(self._ask_idn)
 
     # Function to scan for devices and update the resource combo box using the scan_for_devices function from device_functions.py
-    def scan_for_devices(self):
+    def _scan_for_devices(self):
         self.scan_btn.setEnabled(False)
         self.status_label.setStyleSheet("")
         self.status_label.setText("Scanning...")
@@ -80,7 +80,7 @@ class ConnectionPanel(QGroupBox):
         self._worker.submit("scan", scan_for_devices)
 
     # Function to ask the IDN of the selected device using the ask_idn function from device_functions.py
-    def ask_idn(self):
+    def _ask_idn(self):
         device_type = self.device_combo.currentText()
         if device_type == "Oscilloscope":
             resource = self.osc_resource_combo.currentText()

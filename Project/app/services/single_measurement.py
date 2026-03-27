@@ -1,4 +1,5 @@
-# Collects a full measurement snapshot
+# This file contains the collect_measurement function, which gathers the current measurement values for a given resource and channel and returns a dictionary.
+
 from app.scpi_commands.sds_commands import get_amplitude, get_frequency, get_offset, get_pkpk, get_rms, get_t_div, get_trigger_level, get_v_div
 
 def collect_measurement(
@@ -19,7 +20,7 @@ def collect_measurement(
         "t_div_ms": get_t_div(resource),
         "offset_mv": get_offset(resource, channel),
         "trigger_level": get_trigger_level(resource),
-        "Frequency": get_frequency(resource) if include_frequency else None,
+        "Frequency": get_frequency(resource, channel) if include_frequency else None,
         "Amplitude": get_amplitude(resource, channel) if include_amplitude else None,
         "Peak-to-Peak": get_pkpk(resource, channel) if include_pkpk else None,
         "RMS": get_rms(resource, channel) if include_rms else None,

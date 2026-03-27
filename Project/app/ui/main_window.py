@@ -31,15 +31,15 @@ class MainWindow(QMainWindow):
         self.sds_thread = QThread(self)
         self.sds_worker.moveToThread(self.sds_thread)
         self.sds_thread.started.connect(self.sds_worker.run)
-        self.sds_worker.result_ready.connect(self.on_sds_result)
-        self.sds_worker.error_occurred.connect(self.on_device_error)
+        self.sds_worker.result_ready.connect(self._on_sds_result)
+        self.sds_worker.error_occurred.connect(self._on_device_error)
         self.sds_thread.start()
 
         self.sdg_worker = DeviceWorker()
         self.sdg_thread = QThread(self)
         self.sdg_worker.moveToThread(self.sdg_thread)
         self.sdg_thread.started.connect(self.sdg_worker.run)
-        self.sdg_worker.result_ready.connect(self.on_sdg_result)
+        self.sdg_worker.result_ready.connect(self._on_sdg_result)
         self.sdg_thread.start()
 
         # Layouts
@@ -65,29 +65,29 @@ class MainWindow(QMainWindow):
 
         # Signals
         self.connection_panel.device_combo.currentIndexChanged.connect(self.config_stack.setCurrentIndex)
-        self.connection_panel.gen_resource_combo.currentIndexChanged.connect(self.update_output_btn_status)
-        self.oscilloscope_panel.auto_set_btn.clicked.connect(self.auto_set)
-        self.oscilloscope_panel.scan_cur_set_btn.clicked.connect(self.scan_current_settings)
-        self.oscilloscope_panel.save_set_btn.clicked.connect(self.set_settings)
-        self.oscilloscope_panel.start_measurement_btn.clicked.connect(self.start_measurement)
-        self.oscilloscope_panel.stop_btn.clicked.connect(self.stop_measurement)
-        self.generator_panel.set_configuration_btn.clicked.connect(self.set_configuration)
-        self.generator_panel.save_configuration_btn.clicked.connect(self.save_configuration)
-        self.generator_panel.output_btn.clicked.connect(self.set_output)
-        self.generator_panel.channel_combo.currentIndexChanged.connect(self.update_output_btn_status)
-        self.measurement_display.configuration_loaded.connect(self.load_configuration)
+        self.connection_panel.gen_resource_combo.currentIndexChanged.connect(self._update_output_btn_status)
+        self.oscilloscope_panel.auto_set_btn.clicked.connect(self._auto_set)
+        self.oscilloscope_panel.scan_cur_set_btn.clicked.connect(self._scan_current_settings)
+        self.oscilloscope_panel.save_set_btn.clicked.connect(self._set_settings)
+        self.oscilloscope_panel.start_measurement_btn.clicked.connect(self._start_measurement)
+        self.oscilloscope_panel.stop_btn.clicked.connect(self._stop_measurement)
+        self.generator_panel.set_configuration_btn.clicked.connect(self._set_configuration)
+        self.generator_panel.save_configuration_btn.clicked.connect(self._save_configuration)
+        self.generator_panel.output_btn.clicked.connect(self._set_output)
+        self.generator_panel.channel_combo.currentIndexChanged.connect(self._update_output_btn_status)
+        self.measurement_display.configuration_loaded.connect(self._load_configuration)
         self.oscilloscope_panel.measurement_name_input.textChanged.connect(self.measurement_display.set_measurement_name)
 
         # State for timed measurement loop
         self.pot_measurement = PeriodOfTimeMeasurement()
-        self.pot_measurement.tick.connect(self.on_pot_tick)
-        self.pot_measurement.finished.connect(self.on_pot_finished)
+        self.pot_measurement.tick.connect(self._on_pot_tick)
+        self.pot_measurement.finished.connect(self._on_pot_finished)
         self._measurement_start: datetime.datetime | None = None
 
         # Snapshot service
         self.snapshot_service = SnapshotService()
-        self.snapshot_service.finished.connect(self.on_snapshot_finished)
-        self.snapshot_service.error.connect(self.on_snapshot_error)
+        self.snapshot_service.finished.connect(self._on_snapshot_finished)
+        self.snapshot_service.error.connect(self._on_snapshot_error)
 
         widget = QWidget()
         widget.setLayout(layoutWhole)
@@ -111,14 +111,14 @@ class MainWindow(QMainWindow):
         return int(self.generator_panel.channel_combo.currentText())
 
     # Function to automatically set the oscilloscope settings based on the current resource
-    def auto_set(self):
+    def _auto_set(self):
         resource = self.current_osc_resource
         if not resource:
             return
         self.sds_worker.submit("auto_set", auto_set, resource)
 
     # Function to scan the current settings of the oscilloscope and update the input fields in the panel accordingly
-    def scan_current_settings(self):
+    def _scan_current_settings(self):
         resource = self.current_osc_resource
         channel = self.current_osc_channel
 
@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
             print(f"Scan settings error: {e}")
 
     # Function to set the oscilloscope settings based on the user input
-    def set_settings(self):
+    def _set_settings(self):
         resource = self.current_osc_resource
         channel = self.current_osc_channel
 
@@ -148,7 +148,7 @@ class MainWindow(QMainWindow):
             print(f"Set settings error: {e}")
 
     # Reads checkbox state in the main thread and submits a full measurement to the SDS worker
-    def submit_measurement(self, resource: str, channel: int):
+    def _submit_measurement(self, resource: str, channel: int):
         self.sds_worker.submit(
             "measurement",
             collect_measurement,
@@ -161,7 +161,7 @@ class MainWindow(QMainWindow):
         )
 
     # Function to start the measurement
-    def start_measurement(self):
+    def _start_measurement(self):
         resource = self.current_osc_resource
         channel  = self.current_osc_channel
 
@@ -178,9 +178,6 @@ class MainWindow(QMainWindow):
             return
 
         measurement_type = self.oscilloscope_panel.type_combo.currentText()
-
-        if not resource:
-            return
 
         # If the display already has data, add a separator row for the new setting;
         # otherwise start with a clean display
@@ -212,7 +209,7 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"Period of time measurement error: {e}")
         elif measurement_type == "Single":
-            self.submit_measurement(resource, channel)
+            self._submit_measurement(resource, channel)
         elif measurement_type == "Sweep":
             try:
                 start_freq = float(self.oscilloscope_panel.sweep_start_input.text())
@@ -231,19 +228,19 @@ class MainWindow(QMainWindow):
             except Exception as e:
                 print(f"Sweep error: {e}")
 
-    def stop_measurement(self):
+    def _stop_measurement(self):
         self.pot_measurement.stop()
 
     # Function called on each tick of the measurement timer during a "Period of time" measurement, submits a measurement to the worker and stops the timer when the time is up
-    def on_pot_tick(self, resource, channel, freq, amp, pkpk, rms):
+    def _on_pot_tick(self, resource, channel, freq, amp, pkpk, rms):
         self.sds_worker.submit("measurement", collect_measurement, resource, channel, freq, amp, pkpk, rms)
 
-    def on_pot_finished(self):
+    def _on_pot_finished(self):
         self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
         self.oscilloscope_panel.stop_btn.setEnabled(False)
 
     # Function to set the configuration of the generator based on user input
-    def set_configuration(self):
+    def _set_configuration(self):
         resource = self.current_gen_resource
         channel = self.current_gen_channel
 
@@ -256,10 +253,10 @@ class MainWindow(QMainWindow):
             self.sdg_worker.submit("set_offset_gen", set_offset_gen, resource, float(self.generator_panel.offset_input.text()), channel)
             self.sdg_worker.submit("set_phase", set_phase, resource, float(self.generator_panel.phase_input.text()), channel)
         except Exception as e:
-            print(f"Set configuration error: {e}")
+            QMessageBox.warning(self, "Set Configuration Error", f"An error occurred while setting the configuration:\n{e}")
 
     # Function to save the current generator configuration to the table
-    def save_configuration(self):
+    def _save_configuration(self):
         resource = self.current_gen_resource
         channel = self.current_gen_channel
 
@@ -279,7 +276,7 @@ class MainWindow(QMainWindow):
             print(f"Save configuration error: {e}")
 
     # Function to toggle the output of the generator on and off
-    def set_output(self):
+    def _set_output(self):
         resource = self.current_gen_resource
         channel = self.current_gen_channel
 
@@ -288,7 +285,7 @@ class MainWindow(QMainWindow):
         self.sdg_worker.submit("set_output", set_output, resource, channel)
 
     # Function to update the output button of the generator
-    def update_output_btn_status(self):
+    def _update_output_btn_status(self):
         resource = self.current_gen_resource
         channel = self.current_gen_channel
         if not resource:
@@ -297,10 +294,10 @@ class MainWindow(QMainWindow):
         self.sdg_worker.submit("output_status", get_output_status, resource, channel)
 
     # Function to load the configuration of the oscilloscope into the configuration panel
-    def load_configuration(self, settings: dict):
+    def _load_configuration(self, settings: dict):
         config = settings.get("configuration", {})
 
-       # Determining is the device is a oscilloscope based on the presence of typical oscilloscope settings
+        # Determining if the device is a oscilloscope based on the presence of typical oscilloscope settings
         if any(k in config for k in ["v_div_mv", "t_div_ms", "offset_mv", "trigger_level"]):
             self.connection_panel.device_combo.setCurrentIndex(0)
             self.config_stack.setCurrentIndex(0)
@@ -322,7 +319,7 @@ class MainWindow(QMainWindow):
             self.oscilloscope_panel.measurement_name_input.setText(settings["name"])
 
     # Handles results from the SDS oscilloscope worker
-    def on_sds_result(self, task_id: str, result):
+    def _on_sds_result(self, task_id: str, result):
         match task_id:
             case "v_div":
                 self.oscilloscope_panel.v_div_input.setText(result)
@@ -359,22 +356,22 @@ class MainWindow(QMainWindow):
                 pass
 
     # Handles results from the SDG generator worker
-    def on_sdg_result(self, task_id: str, result):
+    def _on_sdg_result(self, task_id: str, result):
         match task_id:
             case "set_output" | "output_status":
                 self.generator_panel.output_btn.setText(f"Output: {result}")
 
     # Handles errors from both device workers
-    def on_device_error(self, task_id: str, error: str):
+    def _on_device_error(self, task_id: str, error: str):
         print(f"[{task_id}] Device error: {error}")
 
-    def on_snapshot_finished(self, path: str):
+    def _on_snapshot_finished(self, path: str):
         self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
-        print(f"[snapshot] Saved: {path}")
+        QMessageBox.information(self, "Snapshot", f"Snapshot saved: {path}")
 
-    def on_snapshot_error(self, error: str):
+    def _on_snapshot_error(self, error: str):
         self.oscilloscope_panel.start_measurement_btn.setEnabled(True)
-        print(f"[snapshot] Error: {error}")
+        QMessageBox.critical(self, "Snapshot Error", f"An error occurred during snapshot: {error}")
 
     # Overwriting the close eveent of the main window to cleanly stop all worker threads when the application is closed
     def closeEvent(self, event):

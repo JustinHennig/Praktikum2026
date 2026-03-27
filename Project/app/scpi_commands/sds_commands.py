@@ -46,9 +46,10 @@ def set_trigger_level(resource: str, trigger_level: float):
     inst.write(f':TRIG:EDGE:LEV {trigger_level / 1000:.6f}')
 
 # Functions to get measurement values from the oscilloscope
-def get_frequency(resource: str):
+def get_frequency(resource: str, channel: int):
     inst = open_message_resource(resource)
-    freq = float(inst.query(':TRIG:FREQ?').strip())
+    inst.write(f':MEAS:SIMP:SOUR C{channel}')
+    freq = float(inst.query(':MEAS:SIMP:VAL? FREQ').strip())
     return f"{freq:.4f}"
 
 def get_amplitude(resource: str, channel: int):

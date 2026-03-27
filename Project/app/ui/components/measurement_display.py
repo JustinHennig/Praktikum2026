@@ -4,7 +4,7 @@
 from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QHeaderView, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout, QDialog
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QFont
-from app.storage.sqlite_database import insert_measurement, insert_measurement_setting, insert_measurement_value, get_values_by_setting_id, get_all_measurements
+from app.database.alchemy.alchemy_methods import insert_measurement, insert_measurement_setting, insert_measurement_value, get_values_by_setting_id, get_all_measurements
 from app.ui.components.load_delete_measurement_window import LoadMeasurementDialog
 
 _UNITS = {
@@ -50,10 +50,10 @@ class MeasurementDisplay(QGroupBox):
         layout.addLayout(button_row)
 
         # Signals
-        self.save_db_btn.clicked.connect(self.insert_measurement_into_db)
-        self.load_db_btn.clicked.connect(self.load_measurements_from_db)
+        self.save_db_btn.clicked.connect(self._insert_measurement_into_db)
+        self.load_db_btn.clicked.connect(self._load_measurements_from_db)
         self.clear_btn.clicked.connect(self.clear_display)
-        self.delete_row_btn.clicked.connect(self.delete_selected_row)
+        self.delete_row_btn.clicked.connect(self._delete_selected_row)
 
         # Initialize measurement data list
         self.measurement_data = []
@@ -102,7 +102,7 @@ class MeasurementDisplay(QGroupBox):
         self.table.setItem(row, 0, item)
         self.table.setSpan(row, 0, 1, max(col_count, 1))
 
-    def insert_measurement_into_db(self):
+    def _insert_measurement_into_db(self):
         real_data = [d for d in self.measurement_data if "__separator__" not in d]
         if not real_data:
             return
@@ -143,13 +143,13 @@ class MeasurementDisplay(QGroupBox):
             QMessageBox.information(
                 self,
                 "Saved",
-                f"{len(self.measurement_data)} measurement(s) saved to the database."
+                f"{len(real_data)} measurement(s) saved to the database."
             )
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to save to database:\n{e}")
 
     # Function to load the measurement data from the database and display it in the table
-    def load_measurements_from_db(self):
+    def _load_measurements_from_db(self):
         measurements = get_all_measurements()
         if not measurements:
             QMessageBox.information(self, "Load", "No measurements found in the database.")
@@ -193,7 +193,7 @@ class MeasurementDisplay(QGroupBox):
         self._columns = []
 
     # Function to delete the selected row
-    def delete_selected_row(self):
+    def _delete_selected_row(self):
         if not self.table.selectionModel().hasSelection():
             QMessageBox.information(self, "Delete Row", "No row selected.")
             return

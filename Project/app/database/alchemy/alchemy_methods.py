@@ -2,15 +2,20 @@
 
 from pathlib import Path
 import json
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
-from app.models.measurement_record import Measurement, MeasurementSetting, MeasurementValue
+from app.database.alchemy.alchemy_schema import Measurement, MeasurementSetting, MeasurementValue
 
-# Resolve the path to the 'data' directory three levels above this file (Project/data/)
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "database.db"
+# Resolve the path to the 'data' directory four levels above this file (Project/data/)
+DB_PATH = Path(__file__).parent.parent.parent.parent / "data" / "database.db"
 
 # Create the SQLAlchemy engine connecting to the SQLite database file
 engine = create_engine(f"sqlite:///{DB_PATH}")
+
+# Enable foreign key enforcement for every connection (disabled by default in SQLite)
+@event.listens_for(engine, "connect")
+def _set_sqlite_pragma(conn, _):
+    conn.execute("PRAGMA foreign_keys=ON")
 
 Session = sessionmaker(bind=engine)
 

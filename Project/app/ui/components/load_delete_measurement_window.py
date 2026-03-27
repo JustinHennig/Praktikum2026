@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QPushButton, QHeaderView, QLabel
 )
 
-from app.storage.sqlite_database import delete_measurement_by_id
+from app.database.alchemy.alchemy_methods import delete_measurement_by_id
 
 class LoadMeasurementDialog(QDialog):
     def __init__(self, measurements: list[dict], parent=None):
@@ -49,13 +49,13 @@ class LoadMeasurementDialog(QDialog):
         layout.addLayout(btn_row)
 
         # Signals
-        self.load_btn.clicked.connect(self.load)
-        self.delete_btn.clicked.connect(self.delete)
+        self.load_btn.clicked.connect(self._load)
+        self.delete_btn.clicked.connect(self._delete)
         self.cancel_btn.clicked.connect(self.reject)
-        self.table.doubleClicked.connect(self.load)
+        self.table.doubleClicked.connect(self._load)
 
     # Helper function to get the selected row
-    def get_selected_row(self) -> int | None:
+    def _get_selected_row(self) -> int | None:
         selection_model = self.table.selectionModel()
         if selection_model is None:
             return None
@@ -67,8 +67,8 @@ class LoadMeasurementDialog(QDialog):
         return selected_rows[0].row()
 
     # Function to handle loading the selected measurement configuration
-    def load(self):
-        row = self.get_selected_row()
+    def _load(self):
+        row = self._get_selected_row()
         if row is None:
             QMessageBox.information(self, "Load", "No measurement selected.")
             return
@@ -81,8 +81,8 @@ class LoadMeasurementDialog(QDialog):
         self.accept()
 
     # Function to handle deleting the selected measurement configuration and all its linked measurements from the database
-    def delete(self):
-        row = self.get_selected_row()
+    def _delete(self):
+        row = self._get_selected_row()
         if row is None:
             QMessageBox.information(self, "Delete", "No measurement selected.")
             return

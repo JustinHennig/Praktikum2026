@@ -1,4 +1,4 @@
-# Service for managing the period of time measurement mode
+# This file contains the PeriodOfTimeMeasurement class, which is responsible for performing measurements over a specified period of time.
 
 from PySide6.QtCore import QObject, QTimer, Signal
 
@@ -6,10 +6,11 @@ class PeriodOfTimeMeasurement(QObject):
     tick = Signal(str, int, bool, bool, bool, bool)
     finished = Signal()
 
+    # Initializes the object, sets up the timer and connects the timeout signal to the on_tick method.
     def __init__(self):
         super().__init__()
         self.timer = QTimer()
-        self.timer.timeout.connect(self.on_tick)
+        self.timer.timeout.connect(self._on_tick)
         self.remaining = 0
         self.resource = ""
         self.channel = 0
@@ -30,7 +31,7 @@ class PeriodOfTimeMeasurement(QObject):
         self.finished.emit()
 
     # Timer tick handler, emits the tick signal with the current resource, channel, and checkbox states, and decrements the remaining measurement count
-    def on_tick(self):
+    def _on_tick(self):
         if self.remaining <= 0:
             self.stop()
             return

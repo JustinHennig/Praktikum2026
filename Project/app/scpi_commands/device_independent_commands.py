@@ -4,12 +4,17 @@ import pyvisa
 from typing import cast
 from pyvisa.resources import MessageBasedResource
 
-# Function to open a message-based resource and cast it to the correct type for better type checking
+_rm = pyvisa.ResourceManager()
+_resource_cache: dict[str, MessageBasedResource] = {}
+
+# Returns a cached open connection for the given resource, opening it once on first access.
 def open_message_resource(resource: str) -> MessageBasedResource:
-    return cast(MessageBasedResource, pyvisa.ResourceManager().open_resource(resource))
+    if resource not in _resource_cache:
+        _resource_cache[resource] = cast(MessageBasedResource, _rm.open_resource(resource))
+    return _resource_cache[resource]
 
 def scan_for_devices() -> list[str]:
-    return list(pyvisa.ResourceManager().list_resources())
+    return list(_rm.list_resources())
 
 def ask_idn(resource: str) -> str:
     try:

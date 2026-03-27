@@ -1,4 +1,5 @@
-# This file contais the SnapshotService, which is responsible for reading waveform data and savint it as a CSV file.
+# This file contains the SnapshotService, which is responsible for reading waveform data and saving it as a CSV file.
+# The data can be put into a graph using the read_from_csv.py file under the folder utils.
 
 import struct
 import math
@@ -9,9 +10,9 @@ from pathlib import Path
 from PySide6.QtCore import QObject, Signal
 
 from app.scpi_commands.sds_commands import (
-    stop_trigger, start_trigger,
+    get_waveform_data, set_waveform_points, stop_trigger, start_trigger,
     set_waveform_source, set_waveform_start, set_waveform_width,
-    set_waveform_points, get_preamble, get_max_points,
+    get_preamble, get_max_points,
 )
 from app.scpi_commands.device_independent_commands import open_message_resource
 
@@ -25,6 +26,7 @@ class SnapshotService(QObject):
         super().__init__()
         self._cancelled = False
 
+    # Main method to run the process of reading the data, converting it, applying smoothing and saving it to a CSV file.
     def run(self, resource: str, channel: int, points: int, filename: str, smoothing: str):
         try:
             self._cancelled = False
@@ -46,9 +48,11 @@ class SnapshotService(QObject):
         except Exception as e:
             self.error.emit(str(e))
 
+    # Method to signal cancellation of the data reading process.
     def cancel(self):
         self._cancelled = True
 
+    # Method to read the preamble data from the oscilloscope, which contains important configuration and is used to convert the raw codes into voltage and time.
     def _read_preamble(self, resource: str, channel: int) -> dict:
         set_waveform_source(resource, channel)
         set_waveform_start(resource, 0)
@@ -77,6 +81,7 @@ class SnapshotService(QObject):
             'probe': probe, 'wave_count': wave_count, 'endian': endian,
         }
 
+    # This method reads the raw waveform data in chunks, converts it to signed integers, and emits progress signals. It also checks for cancellation between chunks.
     def _read_raw_data(self, resource: str, requested_pts: int, preamble: dict) -> list[int]:
         adc_bit   = preamble['adc_bit']
         endian    = preamble['endian']
@@ -91,10 +96,7 @@ class SnapshotService(QObject):
 
         max_pts     = get_max_points(resource)
         read_chunks = math.ceil(total_pts / max_pts)
-
-        # Open a single connection for all chunks to avoid repeated reconnects
-        inst = open_message_resource(resource)
-        inst.timeout = 30_000
+        
         raw_codes: list[int] = []
 
         for chunk_idx in range(read_chunks):
@@ -104,10 +106,9 @@ class SnapshotService(QObject):
             start_pt       = chunk_idx * max_pts
             pts_this_chunk = min(max_pts, total_pts - start_pt)
 
-            inst.write(f':WAVeform:STARt {start_pt}')
-            inst.write(f':WAVeform:POINt {pts_this_chunk}')
-            inst.write(':WAVeform:DATA?')
-            chunk_raw = inst.read_raw().rstrip(b'\n')
+            set_waveform_start(resource, start_pt)
+            set_waveform_points(resource, pts_this_chunk)
+            chunk_raw = get_waveform_data(resource).rstrip(b'\n')
 
             hash_pos   = chunk_raw.find(b'#')
             n_digits   = int(chunk_raw[hash_pos + 1 : hash_pos + 2])
@@ -125,6 +126,7 @@ class SnapshotService(QObject):
 
         return raw_codes
 
+    # Method to convert the raw codes into voltage and time values using the preamble info. 
     def _convert(self, raw_codes: list[int], preamble: dict) -> tuple[list[float], list[float]]:
         vdiv         = preamble['vdiv']
         voffset      = preamble['voffset']
@@ -137,6 +139,7 @@ class SnapshotService(QObject):
         times    = [-delay - (interval * n / 2) + i * interval for i in range(n)]
         return times, voltages
 
+    # This method applies the selected smoothing algorithm to the voltage data. It supports 'None', 'Moving Average', and 'Savitzky-Golay' methods, and automatically determines the window size based on the number of data points.
     def _apply_smoothing(self, voltages: list[float], method: str) -> list[float]:
         if method == 'None' or len(voltages) < 5:
             return voltages
@@ -157,12 +160,14 @@ class SnapshotService(QObject):
 
         return voltages
 
+    # Method to convert the voltage and time data into a CSV file and includes the preamble information on top of the file.
     def _save_csv(self, times: list[float], voltages: list[float], preamble: dict, filename: str) -> Path:
         output_dir = Path(__file__).parent.parent.parent / 'data'
         output_dir.mkdir(exist_ok=True)
         timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
         path = output_dir / f'{filename}_{timestamp}.csv'
 
+        # Write CSV file with premable info on top and then the time and voltage data
         with open(path, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow([f'# V/div: {preamble["vdiv"]} V'])
